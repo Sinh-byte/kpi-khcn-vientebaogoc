@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Quản lý KPI</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); padding: 40px; }
+        .login-container { max-width: 450px; margin: 100px auto; }
+        h1 { color: #c53030; font-size: 2.5em; margin-bottom: 10px; }
+        h2 { color: #2d3748; font-size: 1.5em; margin: 20px 0 10px; }
+        .subtitle { color: #718096; margin-bottom: 30px; }
+        input, select, textarea { width: 100%; padding: 15px; font-size: 1.1em; border: 2px solid #cbd5e0; border-radius: 10px; margin-bottom: 15px; }
+        button { padding: 12px 24px; font-size: 1em; font-weight: 600; color: white; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border: none; border-radius: 10px; cursor: pointer; transition: transform 0.2s; }
+        button:hover { transform: translateY(-2px); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-secondary { background: #718096; }
+        .btn-danger { background: #c53030; }
+        .btn-success { background: #38a169; }
+        .config-section { background: #e6fffa; border-left: 4px solid #38a169; padding: 20px; border-radius: 10px; margin-bottom: 30px; }
+        .upload-section { background: #f7fafc; border: 2px dashed #cbd5e0; border-radius: 12px; padding: 30px; margin-bottom: 30px; text-align: center; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 15px; text-align: center; }
+        .stat-number { font-size: 2.5em; font-weight: bold; }
+        .log { background: #1a202c; color: #48bb78; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 0.85em; max-height: 300px; overflow-y: auto; margin-bottom: 20px; }
+        .hidden { display: none; }
+        .error { color: #e53e3e; }
+        .warning { color: #dd6b20; }
+        .success { color: #38a169; }
+        .preview-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 0.9em; max-height: 400px; overflow-y: auto; display: block; }
+        .preview-table th, .preview-table td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; }
+        .preview-table th { background: #4c51bf; color: white; font-weight: 600; position: sticky; top: 0; }
+        .preview-table td { background: white; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div id="loginView" class="container login-container">
+        <h1>🔐 Admin Login</h1>
+        <p class="subtitle">Nhập mật khẩu để tiếp tục</p>
+        <input type="password" id="passwordInput" placeholder="Mật khẩu admin">
+        <button id="loginBtn" style="width: 100%;">Đăng nhập</button>
+        <button id="backBtn" style="width: 100%; margin-top: 10px;" class="btn-secondary">← Trang tra cứu User</button>
+    </div>
+
+    <div id="dashboardView" class="container hidden">
+        <div style="display:flex;justify-content:space-between;margin-bottom:30px;flex-wrap:wrap;">
+            <div><h1>⚙️ Admin Dashboard</h1><p class="subtitle">Quản lý dữ liệu KPI với Google Sheets</p></div>
+            <div>
+                <button id="viewUserBtn" class="btn-secondary">👁️ Trang tra cứu User</button>
+                <button id="logoutBtn" class="btn-danger" style="margin-left: 10px;">🚪 Đăng xuất</button>
+            </div>
+        </div>
+        
+        <div class="config-section">
+            <h2>✅ Đã kết nối Google Sheets API</h2>
+            <p style="color: #2d3748; margin-bottom: 10px; font-weight: 600;">
+                Apps Script URL đã được cấu hình sẵn
+            </p>
+            <p style="color: #718096; font-size: 0.9em;">
+                Hệ thống sử dụng Google Apps Script để đồng bộ dữ liệu tự động
+            </p>
+        </div>
+        
+        <div class="stats" id="stats">
+            <div class="stat-card"><div class="stat-number" id="statusIcon">⏳</div><div>Trạng thái API</div></div>
+            <div class="stat-card"><div class="stat-number" id="recordCount">-</div><div>Số năm có dữ liệu</div></div>
+        </div>
+        
+        <div class="upload-section">
+            <h3 style="margin-bottom: 15px;">📤 Upload File Excel Template</h3>
+            <p style="color: #718096; margin-bottom: 15px; font-size: 0.9em;">
+                <strong>Cấu trúc cần có:</strong> Năm xuất bản | Loại hoạt động | Xếp hạng | Giờ tối đa | Tên tạp chí | Tên công trình | Danh sách tác giả
+            </p>
+            <input type="file" id="fileInput" accept=".xlsx,.xls">
+            <button id="previewBtn">📋 Xem trước và xử lý</button>
+        </div>
+        
+        <div id="logSection" class="log hidden"></div>
+        
+        <div id="previewSection" class="hidden" style="margin-top: 30px;">
+            <h3 style="margin-bottom: 15px;">📊 Xem trước dữ liệu (10 dòng đầu)</h3>
+            <div style="overflow-x: auto;">
+                <table class="preview-table" id="previewTable"></table>
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 10px;">
+                <button id="uploadToSheetsBtn" class="btn-success" style="flex: 1;">🚀 Đẩy lên Google Sheets</button>
+                <button id="cancelBtn" class="btn-secondary">❌ Hủy</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var ADMIN_PASSWORD = 'admin2024';
+        var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwb9fcZPwcG8QaX4AwrIfqAO7843xaXc2u7bTtioxK8sMcpz-XAadQHbLDlaBM0wdLc/exec';
+        var currentFileData = null;
+        
+        function checkAuth() { 
+            if (sessionStorage.getItem('adminAuth') === 'true') {
+                showDashboard();
+            }
+        }
+        
+        function login() {
+            var password = document.getElementById('passwordInput').value;
+            if (password === ADMIN_PASSWORD) {
+                sessionStorage.setItem('adminAuth', 'true');
+                showDashboard();
+            } else {
+                alert('❌ Sai mật khẩu!');
+            }
+        }
+        
+        function logout() {
+            sessionStorage.removeItem('adminAuth');
+            document.getElementById('loginView').classList.remove('hidden');
+            document.getElementById('dashboardView').classList.add('hidden');
+        }
+        
+        function showDashboard() {
+            document.getElementById('loginView').classList.add('hidden');
+            document.getElementById('dashboardView').classList.remove('hidden');
+            updateStatus();
+        }
+        
+        function goToUserPage() {
+            window.location.href = 'user.html';
+        }
+        
+        function updateStatus() {
+            document.getElementById('statusIcon').textContent = '⏳';
+            fetch(SCRIPT_URL)
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    document.getElementById('statusIcon').textContent = '✅';
+                    var years = data.availableYears || [];
+                    document.getElementById('recordCount').textContent = years.length || '0';
+                    log('✓ Kết nối Google Sheets thành công', 'success');
+                })
+                .catch(function(error) {
+                    document.getElementById('statusIcon').textContent = '❌';
+                    document.getElementById('recordCount').textContent = 'Lỗi';
+                    log('⚠ Lỗi kết nối: ' + error.message, 'warning');
+                });
+        }
+        
+        function log(msg, type) {
+            type = type || 'info';
+            var logSection = document.getElementById('logSection');
+            logSection.classList.remove('hidden');
+            var line = document.createElement('div');
+            if (type === 'error') line.className = 'error';
+            if (type === 'warning') line.className = 'warning';
+            if (type === 'success') line.className = 'success';
+            line.textContent = new Date().toLocaleTimeString() + ': ' + msg;
+            logSection.appendChild(line);
+            logSection.scrollTop = logSection.scrollHeight;
+        }
+        
+        function calculateScore(role, A, K, H) {
+            if (A === 1) return H;
+            var part1 = (H * 1/3) * (1/K);
+            var part2 = (H * 2/3) * (1/A);
+            if (role === 'first' || role === 'corresponding' || role === 'last') {
+                return Math.round(part1 + part2);
+            }
+            return Math.round(part2);
+        }
+        
+        function previewFile() {
+            var file = document.getElementById('fileInput').files[0];
+            if (!file) { 
+                alert('Vui lòng chọn file!'); 
+                return; 
+            }
+            
+            document.getElementById('logSection').innerHTML = '';
+            log('📄 Đang đọc file: ' + file.name);
+            
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    var data = new Uint8Array(e.target.result);
+                    var workbook = XLSX.read(data, { type: 'array' });
+                    
+                    var sheetName = null;
+                    var rawData = null;
+                    
+                    for (var s = 0; s < workbook.SheetNames.length; s++) {
+                        var testSheetName = workbook.SheetNames[s];
+                        var testName = testSheetName.toLowerCase();
+                        
+                        if (testName.indexOf('khai bao') !== -1 || testName.indexOf('huong dan') !== -1 || testName.indexOf('template') !== -1) {
+                            log('⏭️ Bỏ qua sheet: ' + testSheetName, 'warning');
+                            continue;
+                        }
+                        
+                        var testData = XLSX.utils.sheet_to_json(workbook.Sheets[testSheetName], { 
+                            header: 1,
+                            defval: '',
+                            blankrows: false 
+                        });
+                        
+                        if (testData.length > 5) {
+                            sheetName = testSheetName;
+                            rawData = testData;
+                            break;
+                        }
+                    }
+                    
+                    if (!sheetName || !rawData) {
+                        throw new Error('Không tìm thấy sheet có dữ liệu!');
+                    }
+                    
+                    log('✓ Đã đọc ' + rawData.length + ' dòng từ sheet: ' + sheetName);
+                    
+                    var headerRow = -1;
+                    for (var i = 0; i < Math.min(rawData.length, 10); i++) {
+                        var row = rawData[i];
+                        if (!row || row.length === 0) continue;
+                        
+                        var headerScore = 0;
+                        var keywords = ['nam', 'loai', 'hoat dong', 'xep hang', 'gio', 'tap chi', 'tac gia', 'cong trinh'];
+                        
+                        for (var j = 0; j < row.length; j++) {
+                            var cell = (row[j] || '').toString().toLowerCase()
+                                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                                .replace(/đ/g, 'd');
+                            
+                            for (var k = 0; k < keywords.length; k++) {
+                                if (cell.indexOf(keywords[k]) !== -1) {
+                                    headerScore++;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (headerScore >= 4) {
+                            headerRow = i;
+                            break;
+                        }
+                    }
+                    
+                    if (headerRow === -1) {
+                        log('⚠ Không tìm thấy header tự động, sử dụng dòng đầu tiên', 'warning');
+                        headerRow = 0;
+                    }
+                    
+                    log('✓ Tìm thấy header ở dòng ' + (headerRow + 1));
+                    currentFileData = { rawData: rawData, headerRow: headerRow };
+                    
+                    var previewData = rawData.slice(headerRow, Math.min(headerRow + 11, rawData.length));
+                    var tableHTML = '<thead><tr>';
+                    for (var h = 0; h < previewData[0].length; h++) {
+                        tableHTML += '<th>' + (previewData[0][h] || 'Cột ' + (h + 1)) + '</th>';
+                    }
+                    tableHTML += '</tr></thead><tbody>';
+                    
+                    for (var i = 1; i < previewData.length; i++) {
+                        tableHTML += '<tr>';
+                        for (var j = 0; j < previewData[i].length; j++) {
+                            var cellText = (previewData[i][j] || '').toString();
+                            tableHTML += '<td>' + (cellText.length > 50 ? cellText.substring(0, 50) + '...' : cellText) + '</td>';
+                        }
+                        tableHTML += '</tr>';
+                    }
+                    tableHTML += '</tbody>';
+                    document.getElementById('previewTable').innerHTML = tableHTML;
+                    
+                    document.getElementById('previewSection').classList.remove('hidden');
+                    document.getElementById('previewSection').scrollIntoView({ behavior: 'smooth' });
+                    
+                } catch (error) {
+                    log('❌ LỖI: ' + error.message, 'error');
+                    alert('❌ Lỗi: ' + error.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+        
+        function uploadToSheets() {
+            if (!currentFileData) {
+                alert('❌ Chưa có dữ liệu để upload!');
+                return;
+            }
+            
+            var uploadBtn = document.getElementById('uploadToSheetsBtn');
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = '⏳ Đang xử lý...';
+            
+            log('📄 Bắt đầu xử lý dữ liệu...', 'success');
+            
+            var rawData = currentFileData.rawData;
+            var headerRow = currentFileData.headerRow;
+            
+            var dataByYear = {};
+            var processedCount = 0;
+            var skippedCount = 0;
+            
+            for (var i = headerRow + 1; i < rawData.length; i++) {
+                var row = rawData[i];
+                if (!row || row.length === 0) {
+                    continue;
+                }
+                
+                if (row.length < 7) {
+                    log('⏭️ Dòng ' + (i+1) + ': Không đủ cột (' + row.length + '/7), bỏ qua', 'warning');
+                    skippedCount++;
+                    continue;
+                }
+                
+                var year = (row[1] || '').toString().trim();
+                var activityType = (row[2] || '').toString().trim();
+                var ranking = (row[3] || '').toString().trim();
+                var H = parseInt(row[4]) || 600;
+                var journal = (row[5] || '').toString().trim();
+                var title = (row[6] || '').toString().trim();
+                var authorsStr = (row[7] || '').toString().trim();
+                
+                if (!title || !authorsStr) {
+                    skippedCount++;
+                    continue;
+                }
+                
+                if (!year) year = 'Unknown';
+                
+                var authorList = authorsStr.split(/[,;]/).map(function(a) { return a.trim(); }).filter(function(a) { return a; });
+                var A = authorList.length;
+                var K = 1;
+                
+                if (!dataByYear[year]) {
+                    dataByYear[year] = [['Năm', 'STT', 'Loại hoạt động', 'Xếp hạng', 'Tên công trình', 'Tên tạp chí', 'Tác giả', 'Role', 'Tổng tác giả', 'H_max', 'Điểm']];
+                }
+                
+                for (var j = 0; j < authorList.length; j++) {
+                    var authorName = authorList[j];
+                    var role = 'coauthor';
+                    if (A === 1) {
+                        role = 'first';
+                    } else if (j === 0) {
+                        role = 'first';
+                    } else if (j === A - 1) {
+                        role = 'last';
+                    }
+                    
+                    var score = calculateScore(role, A, K, H);
+                    
+                    dataByYear[year].push([
+                        year,
+                        processedCount + 1,
+                        activityType,
+                        ranking,
+                        title,
+                        journal,
+                        authorName,
+                        role,
+                        A,
+                        H,
+                        score
+                    ]);
+                    processedCount++;
+                }
+            }
+            
+            log('📊 Đã xử lý ' + processedCount + ' bản ghi' + (skippedCount > 0 ? ' (bỏ qua ' + skippedCount + ' dòng)' : ''), 'success');
+            log('🚀 Đang đẩy lên Google Sheets theo từng năm...', 'success');
+            
+            var years = Object.keys(dataByYear);
+            var uploadPromises = [];
+            
+            for (var y = 0; y < years.length; y++) {
+                var yearName = years[y];
+                var sheetData = dataByYear[yearName];
+                
+                log('  → Đẩy ' + (sheetData.length - 1) + ' bản ghi vào sheet "' + yearName + '"', 'success');
+                
+                var promise = fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'write',
+                        sheetName: yearName,
+                        values: sheetData
+                    })
+                });
+                
+                uploadPromises.push(promise);
+            }
+            
+            Promise.all(uploadPromises)
+                .then(function() {
+                    log('✅ Đã đẩy ' + processedCount + ' bản ghi vào ' + years.length + ' sheet theo năm!', 'success');
+                    alert('✅ Thành công!\n\n- Đã đẩy: ' + processedCount + ' bản ghi\n- Số sheet: ' + years.length + ' (' + years.join(', ') + ')\n- Kiểm tra Google Sheets để xem dữ liệu');
+                    
+                    document.getElementById('previewSection').classList.add('hidden');
+                    document.getElementById('fileInput').value = '';
+                    currentFileData = null;
+                    
+                    setTimeout(function() {
+                        updateStatus();
+                    }, 2000);
+                    
+                    uploadBtn.disabled = false;
+                    uploadBtn.textContent = '🚀 Đẩy lên Google Sheets';
+                })
+                .catch(function(error) {
+                    log('❌ Lỗi: ' + error.message, 'error');
+                    alert('❌ Lỗi khi đẩy dữ liệu: ' + error.message);
+                    uploadBtn.disabled = false;
+                    uploadBtn.textContent = '🚀 Đẩy lên Google Sheets';
+                });
+        }
+        
+        function cancelPreview() {
+            document.getElementById('previewSection').classList.add('hidden');
+            document.getElementById('fileInput').value = '';
+            currentFileData = null;
+        }
+        
+        checkAuth();
+        
+        document.getElementById('loginBtn').addEventListener('click', login);
+        document.getElementById('backBtn').addEventListener('click', goToUserPage);
+        document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') login();
+        });
+        document.getElementById('viewUserBtn').addEventListener('click', goToUserPage);
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+        document.getElementById('previewBtn').addEventListener('click', previewFile);
+        document.getElementById('uploadToSheetsBtn').addEventListener('click', uploadToSheets);
+        document.getElementById('cancelBtn').addEventListener('click', cancelPreview);
+    </script>
+</body>
+</html>

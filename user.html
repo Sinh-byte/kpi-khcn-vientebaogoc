@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tra cứu KPI Nghiên cứu viên</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); padding: 40px; }
+        h1 { color: #4c51bf; font-size: 2.5em; margin-bottom: 10px; text-align: center; }
+        .subtitle { color: #718096; text-align: center; margin-bottom: 40px; font-size: 1.1em; }
+        .search-box { background: #f7fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 30px; margin-bottom: 30px; }
+        label { display: block; font-weight: 600; color: #2d3748; margin-bottom: 10px; font-size: 1.1em; }
+        input, select { width: 100%; padding: 15px 20px; font-size: 1.1em; border: 2px solid #cbd5e0; border-radius: 10px; transition: all 0.3s; }
+        input:focus, select:focus { outline: none; border-color: #4c51bf; box-shadow: 0 0 0 3px rgba(76, 81, 191, 0.1); }
+        button { width: 100%; padding: 15px; margin-top: 15px; font-size: 1.1em; font-weight: 600; color: white; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 10px; cursor: pointer; transition: transform 0.2s; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .info-box { background: #fef5e7; border-left: 4px solid #f39c12; padding: 15px; border-radius: 8px; margin-top: 20px; font-size: 0.95em; color: #7f6e0a; }
+        .loading { text-align: center; color: #4c51bf; margin-top: 20px; font-size: 1.1em; }
+        .result { margin-top: 40px; }
+        .total-score { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 30px; }
+        .total-score h2 { font-size: 1.2em; opacity: 0.9; margin-bottom: 10px; }
+        .total-score .score { font-size: 3em; font-weight: bold; }
+        .activities { max-height: 500px; overflow-y: auto; }
+        .activity-card { background: #f7fafc; border-left: 4px solid #4c51bf; padding: 20px; margin-bottom: 15px; border-radius: 10px; transition: all 0.3s; }
+        .activity-card:hover { box-shadow: 0 5px 15px rgba(0,0,0,0.1); transform: translateX(5px); }
+        .activity-title { color: #2d3748; font-size: 1.1em; font-weight: 600; margin-bottom: 8px; }
+        .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
+        .badge { padding: 5px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 600; }
+        .badge-category { background: #bee3f8; color: #2c5282; }
+        .badge-quartile { background: #c6f6d5; color: #22543d; }
+        .badge-role { background: #e9d8fd; color: #553c9a; }
+        .activity-score { text-align: right; font-size: 2em; font-weight: bold; color: #4c51bf; }
+        .back-button { background: #e2e8f0; color: #2d3748; margin-top: 20px; }
+        .hidden { display: none; }
+        .admin-link { text-align: center; margin-top: 20px; font-size: 0.9em; }
+        .admin-link a { color: #4c51bf; text-decoration: none; }
+        .error-message { background: #fed7d7; border-left: 4px solid #e53e3e; padding: 15px; border-radius: 8px; margin-top: 20px; color: #742a2a; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="searchView">
+            <h1>🔍 Tra cứu KPI Nghiên cứu viên</h1>
+            <p class="subtitle">Nhập họ tên để xem điểm KPI của bạn</p>
+            <div class="search-box">
+                <label for="yearSelect">Chọn năm tra cứu:</label>
+                <select id="yearSelect" style="margin-bottom: 15px;">
+                    <option value="">Đang tải...</option>
+                </select>
+                
+                <label for="nameInput">Họ và tên của bạn:</label>
+                <input type="text" id="nameInput" placeholder="Ví dụ: Phạm Văn Phúc" autocomplete="off">
+                <button id="searchBtn">🔎 Xem điểm KPI của tôi</button>
+                <div class="info-box">ℹ️ <strong>Lưu ý:</strong> Nhập chính xác họ tên như trong hồ sơ</div>
+            </div>
+            <div id="loadingMessage" class="loading hidden">⏳ Đang tải dữ liệu từ cơ sở dữ liệu...</div>
+            <div id="errorMessage" class="error-message hidden"></div>
+            <div class="admin-link">
+                <a href="index.html">🔐 Đăng nhập quản trị</a>
+            </div>
+        </div>
+
+        <div id="resultView" class="hidden result">
+            <h1>👤 Thông tin KPI</h1>
+            <p class="subtitle" id="userName"></p>
+            <div class="total-score">
+                <h2>Tổng điểm KPI</h2>
+                <div class="score" id="totalScore">0 giờ</div>
+                <div class="count" id="activityCount">0 hoạt động</div>
+            </div>
+            <h3 style="margin-bottom: 20px; color: #2d3748;">📋 Chi tiết các hoạt động:</h3>
+            <div class="activities" id="activitiesList"></div>
+            <button id="backBtn" class="back-button">← Tra cứu người khác</button>
+        </div>
+    </div>
+
+    <script>
+        var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwb9fcZPwcG8QaX4AwrIfqAO7843xaXc2u7bTtioxK8sMcpz-XAadQHbLDlaBM0wdLc/exec';
+        var cachedData = {};
+        var availableYears = [];
+        
+        function loadAvailableYears() {
+            console.log('Loading available years...');
+            fetch(SCRIPT_URL)
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    availableYears = data.availableYears || [];
+                    console.log('Available years:', availableYears);
+                    
+                    var yearSelect = document.getElementById('yearSelect');
+                    yearSelect.innerHTML = '';
+                    
+                    if (availableYears.length === 0) {
+                        yearSelect.innerHTML = '<option value="">Chưa có dữ liệu</option>';
+                    } else {
+                        availableYears.forEach(function(year) {
+                            var option = document.createElement('option');
+                            option.value = year;
+                            option.textContent = 'Năm ' + year;
+                            yearSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Error loading years:', error);
+                    document.getElementById('yearSelect').innerHTML = '<option value="">Lỗi tải dữ liệu</option>';
+                });
+        }
+        
+        function normalizeName(name) {
+            if (!name) return '';
+            return name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/[^a-z0-9]/g, '').trim();
+        }
+
+        function isSamePerson(name1, name2) {
+            var n1 = normalizeName(name1);
+            var n2 = normalizeName(name2);
+            if (n1 === n2) return true;
+            var words1 = name1.toLowerCase().split(/\s+/);
+            var words2 = name2.toLowerCase().split(/\s+/);
+            if (words1.length >= 2 && words2.length >= 2) {
+                var first1 = normalizeName(words1[0]);
+                var last1 = normalizeName(words1[words1.length - 1]);
+                var first2 = normalizeName(words2[0]);
+                var last2 = normalizeName(words2[words2.length - 1]);
+                if ((first1 === last2 && last1 === first2) || (first1 === first2 && last1 === last2)) return true;
+            }
+            return false;
+        }
+        
+        function loadFromGoogleSheets(year) {
+            console.log('Fetching from:', SCRIPT_URL, 'for year:', year);
+            var url = SCRIPT_URL + '?sheet=' + encodeURIComponent(year);
+            
+            return fetch(url)
+                .then(function(response) {
+                    console.log('Response status:', response.status);
+                    if (!response.ok) throw new Error('Không thể tải dữ liệu');
+                    return response.json();
+                })
+                .then(function(data) {
+                    console.log('Data received:', data);
+                    var rows = data.values || [];
+                    console.log('Total rows:', rows.length);
+                    if (rows.length < 2) return [];
+                    
+                    var activities = [];
+                    for (var i = 1; i < rows.length; i++) {
+                        var row = rows[i];
+                        if (!row || row.length < 7) continue;
+                        
+                        activities.push({
+                            year: row[0] || '',
+                            activityType: row[2] || '',
+                            ranking: row[3] || '',
+                            title: row[4] || '',
+                            journal: row[5] || '',
+                            authorName: row[6] || '',
+                            role: row[7] || 'coauthor',
+                            totalAuthors: parseInt(row[8]) || 1,
+                            H: parseInt(row[9]) || 600,
+                            score: parseInt(row[10]) || 0
+                        });
+                    }
+                    
+                    console.log('Activities parsed:', activities.length);
+                    return activities;
+                })
+                .catch(function(error) {
+                    console.error('Load error:', error);
+                    throw error;
+                });
+        }
+
+        function searchKPI() {
+            var selectedYear = document.getElementById('yearSelect').value;
+            if (!selectedYear) {
+                alert('Vui lòng chọn năm tra cứu!');
+                return;
+            }
+            
+            var nameInput = document.getElementById('nameInput').value.trim();
+            if (!nameInput) { 
+                alert('Vui lòng nhập họ tên!'); 
+                return; 
+            }
+            
+            var searchBtn = document.getElementById('searchBtn');
+            var loadingMsg = document.getElementById('loadingMessage');
+            var errorMsg = document.getElementById('errorMessage');
+            
+            searchBtn.disabled = true;
+            searchBtn.textContent = '⏳ Đang tìm kiếm...';
+            loadingMsg.classList.remove('hidden');
+            errorMsg.classList.add('hidden');
+            
+            if (cachedData[selectedYear]) {
+                console.log('Using cached data for year:', selectedYear);
+                processSearch(nameInput, cachedData[selectedYear], selectedYear);
+                return;
+            }
+            
+            console.log('Loading fresh data for year:', selectedYear);
+            loadFromGoogleSheets(selectedYear)
+                .then(function(activities) {
+                    console.log('Loaded activities:', activities.length);
+                    cachedData[selectedYear] = activities;
+                    processSearch(nameInput, cachedData[selectedYear], selectedYear);
+                })
+                .catch(function(error) {
+                    console.error('Search error:', error);
+                    loadingMsg.classList.add('hidden');
+                    errorMsg.textContent = '❌ Lỗi: ' + error.message;
+                    errorMsg.classList.remove('hidden');
+                    searchBtn.disabled = false;
+                    searchBtn.textContent = '🔎 Xem điểm KPI của tôi';
+                });
+        }
+        
+        function processSearch(nameInput, activities, year) {
+            var searchBtn = document.getElementById('searchBtn');
+            var loadingMsg = document.getElementById('loadingMessage');
+            var errorMsg = document.getElementById('errorMessage');
+            
+            console.log('Processing search for:', nameInput, 'in year:', year);
+            console.log('Total activities:', activities.length);
+            
+            if (!activities || activities.length === 0) {
+                loadingMsg.classList.add('hidden');
+                errorMsg.textContent = '⚠️ Chưa có dữ liệu trong năm ' + year + '.';
+                errorMsg.classList.remove('hidden');
+                searchBtn.disabled = false;
+                searchBtn.textContent = '🔎 Xem điểm KPI của tôi';
+                return;
+            }
+            
+            var userActivities = activities.filter(function(a) { 
+                var match = isSamePerson(a.authorName, nameInput);
+                console.log('Comparing:', a.authorName, 'with', nameInput, '=', match);
+                return match;
+            });
+            
+            console.log('Found activities:', userActivities.length);
+            loadingMsg.classList.add('hidden');
+            
+            if (userActivities.length === 0) { 
+                errorMsg.textContent = '❌ Không tìm thấy dữ liệu cho tên "' + nameInput + '" trong năm ' + year;
+                errorMsg.classList.remove('hidden');
+                searchBtn.disabled = false;
+                searchBtn.textContent = '🔎 Xem điểm KPI của tôi';
+                return; 
+            }
+            
+            displayResults(nameInput, userActivities, year);
+            searchBtn.disabled = false;
+            searchBtn.textContent = '🔎 Xem điểm KPI của tôi';
+        }
+
+        function displayResults(name, activities, year) {
+            document.getElementById('searchView').classList.add('hidden');
+            document.getElementById('resultView').classList.remove('hidden');
+            document.getElementById('userName').textContent = name + ' - Năm ' + year;
+            var totalScore = activities.reduce(function(sum, a) { return sum + (a.score || 0); }, 0);
+            document.getElementById('totalScore').textContent = totalScore.toLocaleString() + ' giờ';
+            document.getElementById('activityCount').textContent = activities.length + ' hoạt động';
+            
+            var listHTML = activities.map(function(a) {
+                var categoryNames = { paper: 'Bài báo', book: 'Sách', ip: 'Sở hữu trí tuệ', project: 'Đề tài', award: 'Giải thưởng', conference: 'Hội nghị' };
+                var roleNames = { first: 'First Author', corresponding: 'Corresponding', last: 'Last Author', coauthor: 'Co-author' };
+                
+                var activityType = 'Hoạt động KHCN';
+                if (a.quartile) {
+                    var qStr = a.quartile.toString().toLowerCase();
+                    if (qStr.indexOf('q1') !== -1 || qStr.indexOf('q2') !== -1 || qStr.indexOf('q3') !== -1 || qStr.indexOf('q4') !== -1) {
+                        activityType = 'Tạp chí';
+                    } else if (qStr.indexOf('hoi nghi') !== -1 || qStr.indexOf('conference') !== -1) {
+                        activityType = 'Hội nghị';
+                    } else if (qStr.indexOf('patent') !== -1 || qStr.indexOf('so huu') !== -1) {
+                        activityType = 'Sở hữu trí tuệ';
+                    } else if (qStr.indexOf('de tai') !== -1 || qStr.indexOf('project') !== -1) {
+                        activityType = 'Đề tài KHCN';
+                    } else if (qStr.indexOf('giai thuong') !== -1 || qStr.indexOf('award') !== -1) {
+                        activityType = 'Giải thưởng';
+                    }
+                }
+                
+                var roleName = roleNames[a.role] || '';
+                
+                var H = parseInt(a.H) || 600;
+                var A = parseInt(a.totalAuthors) || 1;
+                
+                var formula = '';
+                if (A === 1) {
+                    formula = 'Tác giả duy nhất: ' + H + 'h';
+                } else {
+                    var K = 1;
+                    
+                    if (a.role === 'first' || a.role === 'corresponding' || a.role === 'last') {
+                        var part1 = Math.round((H * 1/3) * (1/K));
+                        var part2 = Math.round((H * 2/3) * (1/A));
+                        formula = '<strong>Tác giả chính thuộc Viện:</strong><br/>' +
+                                 'Rổ 1: (1/3 × ' + H + ') × (1/' + K + ') = ' + part1 + 'h<br/>' +
+                                 'Rổ 2: (2/3 × ' + H + ') × (1/' + A + ') = ' + part2 + 'h<br/>' +
+                                 '<strong>Tổng: ' + (part1 + part2) + 'h</strong>';
+                    } else {
+                        var part2 = Math.round((H * 2/3) * (1/A));
+                        formula = '<strong>Co-author thuộc Viện:</strong><br/>' +
+                                 'Rổ 2: (2/3 × ' + H + ') × (1/' + A + ') = ' + part2 + 'h';
+                    }
+                }
+                
+                var journalInfo = a.journal ? '<div style="color:#718096;font-size:0.9em;margin-bottom:10px">' + a.journal + (a.year ? ' (' + a.year + ')' : '') + '</div>' : '';
+                var quartileBadge = a.quartile ? '<span class="badge badge-quartile">' + a.quartile + '</span>' : '';
+                var roleBadge = roleName ? '<span class="badge badge-role">' + roleName + '</span>' : '';
+                var authorBadge = a.totalAuthors > 1 ? '<span class="badge">' + a.totalAuthors + ' tác giả</span>' : '';
+                
+                return '<div class="activity-card">' +
+                    '<div class="activity-title">' + (a.title || 'Không có tiêu đề') + '</div>' +
+                    journalInfo +
+                    '<div class="badges">' +
+                        '<span class="badge badge-category">' + activityType + '</span>' +
+                        quartileBadge +
+                        roleBadge +
+                        authorBadge +
+                    '</div>' +
+                    '<div style="background:#f0f4ff;padding:12px;border-radius:8px;margin:10px 0;font-size:0.85em;color:#4c51bf;line-height:1.6;">' +
+                        '<div style="font-weight:600;margin-bottom:5px;">📐 Công thức tính điểm:</div>' +
+                        '<div style="font-family:monospace;">' + formula + '</div>' +
+                    '</div>' +
+                    '<div class="activity-score">' + (a.score || 0).toLocaleString() + ' giờ</div>' +
+                '</div>';
+            }).join('');
+            document.getElementById('activitiesList').innerHTML = listHTML;
+        }
+
+        function goBack() {
+            document.getElementById('searchView').classList.remove('hidden');
+            document.getElementById('resultView').classList.add('hidden');
+            document.getElementById('nameInput').value = '';
+            document.getElementById('errorMessage').classList.add('hidden');
+        }
+
+        document.getElementById('nameInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') searchKPI();
+        });
+        
+        document.getElementById('searchBtn').addEventListener('click', searchKPI);
+        document.getElementById('backBtn').addEventListener('click', goBack);
+        
+        loadAvailableYears();
+        
+        console.log('Script loaded. SCRIPT_URL:', SCRIPT_URL);
+    </script>
+</body>
+</html>
