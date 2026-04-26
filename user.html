@@ -154,6 +154,7 @@
                         
                         activities.push({
                             year: row[0] || '',
+                            stt: row[1] || '',
                             activityType: row[2] || '',
                             ranking: row[3] || '',
                             title: row[4] || '',
@@ -254,12 +255,12 @@
                 return; 
             }
             
-            displayResults(nameInput, userActivities, year);
+            displayResults(nameInput, userActivities, year, activities);
             searchBtn.disabled = false;
             searchBtn.textContent = '🔎 Xem điểm KPI của tôi';
         }
 
-        function displayResults(name, activities, year) {
+        function displayResults(name, activities, year, allActivities) {
             document.getElementById('searchView').classList.add('hidden');
             document.getElementById('resultView').classList.remove('hidden');
             document.getElementById('userName').textContent = name + ' - Năm ' + year;
@@ -288,6 +289,8 @@
                 }
                 
                 var roleName = roleNames[a.role] || '';
+                var rankingText = (a.ranking || '').toString().trim();
+                var rankingBadge = rankingText ? '<span class="badge badge-quartile">Xếp hạng: ' + rankingText + '</span>' : '';
                 
                 var H = parseInt(a.H) || 600;
                 var A = parseInt(a.totalAuthors) || 1;
@@ -315,17 +318,52 @@
                 var journalInfo = a.journal ? '<div style="color:#718096;font-size:0.9em;margin-bottom:10px">' + a.journal + (a.year ? ' (' + a.year + ')' : '') + '</div>' : '';
                 var quartileBadge = a.quartile ? '<span class="badge badge-quartile">' + a.quartile + '</span>' : '';
                 var roleBadge = roleName ? '<span class="badge badge-role">' + roleName + '</span>' : '';
-                var authorBadge = a.totalAuthors > 1 ? '<span class="badge">' + a.totalAuthors + ' tác giả</span>' : '';
+                
+                var relatedActivities = [];
+                if (a.stt !== '') {
+                    relatedActivities = (allActivities || []).filter(function(item) {
+                        return item.stt === a.stt;
+                    });
+                } else {
+                    relatedActivities = (allActivities || []).filter(function(item) {
+                        return item.title === a.title && item.journal === a.journal && item.year === a.year;
+                    });
+                }
+                
+                var authorNames = [];
+                relatedActivities.forEach(function(item) {
+                    if (item.authorName && authorNames.indexOf(item.authorName) === -1) {
+                        authorNames.push(item.authorName);
+                    }
+                });
+                
+                if (authorNames.length === 0 && a.authorName) {
+                    authorNames.push(a.authorName);
+                }
+                
+                var authorListHtml = authorNames.length > 0
+                    ? '<div style="color:#4a5568;font-size:0.9em;margin:8px 0 10px;"><strong>Tác giả:</strong> ' + authorNames.join(', ') + '</div>'
+                    : '';
+                var authorBadge = authorNames.length > 1 ? '<span class="badge">' + authorNames.length + ' tác giả</span>' : '';
+                var detailInfoHtml = '<div style="color:#4a5568;font-size:0.9em;line-height:1.6;margin:6px 0 10px;">' +
+                    '<div><strong>Loại hoạt động:</strong> ' + (a.activityType || activityType) + '</div>' +
+                    '<div><strong>Xếp hạng:</strong> ' + (rankingText || 'Chưa có') + '</div>' +
+                    '<div><strong>Vai trò:</strong> ' + (roleName || a.role || 'Chưa xác định') + '</div>' +
+                    '<div><strong>H tối đa:</strong> ' + H + ' giờ</div>' +
+                '</div>';
                 
                 return '<div class="activity-card">' +
                     '<div class="activity-title">' + (a.title || 'Không có tiêu đề') + '</div>' +
                     journalInfo +
                     '<div class="badges">' +
                         '<span class="badge badge-category">' + activityType + '</span>' +
+                        rankingBadge +
                         quartileBadge +
                         roleBadge +
                         authorBadge +
                     '</div>' +
+                    authorListHtml +
+                    detailInfoHtml +
                     '<div style="background:#f0f4ff;padding:12px;border-radius:8px;margin:10px 0;font-size:0.85em;color:#4c51bf;line-height:1.6;">' +
                         '<div style="font-weight:600;margin-bottom:5px;">📐 Công thức tính điểm:</div>' +
                         '<div style="font-family:monospace;">' + formula + '</div>' +
