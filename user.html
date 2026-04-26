@@ -17,6 +17,7 @@
         button { width: 100%; padding: 15px; margin-top: 15px; font-size: 1.1em; font-weight: 600; color: white; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 10px; cursor: pointer; transition: transform 0.2s; }
         button:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-export { background: linear-gradient(135deg, #2f855a 0%, #276749 100%); }
         .info-box { background: #fef5e7; border-left: 4px solid #f39c12; padding: 15px; border-radius: 8px; margin-top: 20px; font-size: 0.95em; color: #7f6e0a; }
         .loading { text-align: center; color: #4c51bf; margin-top: 20px; font-size: 1.1em; }
         .result { margin-top: 40px; }
@@ -34,11 +35,14 @@
         .badge-role { background: #e9d8fd; color: #553c9a; }
         .activity-score { text-align: right; font-size: 2em; font-weight: bold; color: #4c51bf; }
         .back-button { background: #e2e8f0; color: #2d3748; margin-top: 20px; }
+        .result-actions { display: flex; gap: 12px; margin-top: 20px; }
+        .result-actions button { margin-top: 0; }
         .hidden { display: none; }
         .admin-link { text-align: center; margin-top: 20px; font-size: 0.9em; }
         .admin-link a { color: #4c51bf; text-decoration: none; }
         .error-message { background: #fed7d7; border-left: 4px solid #e53e3e; padding: 15px; border-radius: 8px; margin-top: 20px; color: #742a2a; }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -73,7 +77,10 @@
             </div>
             <h3 style="margin-bottom: 20px; color: #2d3748;">📋 Chi tiết các hoạt động:</h3>
             <div class="activities" id="activitiesList"></div>
-            <button id="backBtn" class="back-button">← Tra cứu người khác</button>
+            <div class="result-actions">
+                <button id="exportWordBtn" class="btn-export">📄 Xuất hồ sơ Word</button>
+                <button id="backBtn" class="back-button">← Tra cứu người khác</button>
+            </div>
         </div>
     </div>
 
@@ -81,6 +88,10 @@
         var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwb9fcZPwcG8QaX4AwrIfqAO7843xaXc2u7bTtioxK8sMcpz-XAadQHbLDlaBM0wdLc/exec';
         var cachedData = {};
         var availableYears = [];
+        var lastSearchResult = null;
+        var DOC_UNIT_NAME = 'VIỆN TẾ BÀO GỐC';
+        var DOC_ORG_LINE = 'PHÒNG KHCN&QHĐN';
+        var DOC_LOGO_URL = '';
         
         function loadAvailableYears() {
             console.log('Loading available years...');
@@ -260,6 +271,389 @@
             searchBtn.textContent = '🔎 Xem điểm KPI của tôi';
         }
 
+        function normalizeText(value) {
+            return (value || '').toString().toLowerCase().trim().replace(/\s+/g, ' ');
+        }
+
+        function getActivityGroupKey(a) {
+            return [
+                normalizeText(a.title),
+                normalizeText(a.journal),
+                normalizeText(a.year),
+                normalizeText(a.ranking),
+                normalizeText(a.activityType),
+                parseInt(a.H) || 600,
+                parseInt(a.totalAuthors) || 1
+            ].join('||');
+        }
+
+        function buildAuthorMap(allActivities) {
+            var map = {};
+            (allActivities || []).forEach(function(item) {
+                var key = getActivityGroupKey(item);
+                if (!map[key]) map[key] = [];
+                if (item.authorName && map[key].indexOf(item.authorName) === -1) {
+                    map[key].push(item.authorName);
+                }
+            });
+            return map;
+        }
+
+        function getActivityType(a) {
+            var activityType = (a.activityType || '').toString().trim();
+            if (activityType) return activityType;
+            return 'Hoạt động KHCN';
+        }
+
+        function escapeHtml(text) {
+            return (text || '').toString()
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function loadScript(src) {
+            return new Promise(function(resolve, reject) {
+                var script = document.createElement('script');
+                script.src = src;
+                script.async = true;
+                script.onload = function() { resolve(); };
+                script.onerror = function() { reject(new Error('Không tải được: ' + src)); };
+                document.head.appendChild(script);
+            });
+        }
+
+        async function ensureDocxLibrary() {
+            if (window.docx) return true;
+            var sources = [
+                'https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js',
+                'https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js',
+                'https://unpkg.com/docx@8.5.0/build/index.umd.js'
+            ];
+            for (var i = 0; i < sources.length; i++) {
+                try {
+                    await loadScript(sources[i]);
+                    if (window.docx) return true;
+                } catch (e) {
+                    console.warn(e.message);
+                }
+            }
+            return false;
+        }
+
+        function saveBlobFile(blob, filename) {
+            var url = URL.createObjectURL(blob);
+            var link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function getAuthorNamesForActivity(activity, allActivities, authorMap) {
+            var authorNames = authorMap[getActivityGroupKey(activity)] || [];
+            if (authorNames.length <= 1) {
+                var fallbackByTitle = (allActivities || []).filter(function(item) {
+                    return normalizeText(item.title) === normalizeText(activity.title) &&
+                           normalizeText(item.year) === normalizeText(activity.year);
+                });
+                authorNames = [];
+                fallbackByTitle.forEach(function(item) {
+                    if (item.authorName && authorNames.indexOf(item.authorName) === -1) {
+                        authorNames.push(item.authorName);
+                    }
+                });
+            }
+            if (authorNames.length === 0 && activity.authorName) {
+                authorNames.push(activity.authorName);
+            }
+            return authorNames;
+        }
+
+        function getScoreFormulaText(activity) {
+            var H = parseInt(activity.H) || 600;
+            var A = parseInt(activity.totalAuthors) || 1;
+            var K = 1;
+            if (A === 1) {
+                return 'Tác giả duy nhất: ' + H + 'h';
+            }
+            if (activity.role === 'first' || activity.role === 'corresponding' || activity.role === 'last') {
+                var part1 = Math.round((H * 1 / 3) * (1 / K));
+                var part2 = Math.round((H * 2 / 3) * (1 / A));
+                return 'Vai trò chính: (1/3 x ' + H + ') x (1/' + K + ') = ' + part1 + 'h; ' +
+                       'Nhóm tác giả: (2/3 x ' + H + ') x (1/' + A + ') = ' + part2 + 'h; ' +
+                       'Tổng: ' + (part1 + part2) + 'h';
+            }
+            var partCoAuthor = Math.round((H * 2 / 3) * (1 / A));
+            return 'Đồng tác giả: (2/3 x ' + H + ') x (1/' + A + ') = ' + partCoAuthor + 'h';
+        }
+
+        async function exportToWord() {
+            if (!lastSearchResult || !lastSearchResult.activities || lastSearchResult.activities.length === 0) {
+                alert('Chưa có dữ liệu để xuất. Vui lòng tra cứu trước.');
+                return;
+            }
+            var libraryReady = await ensureDocxLibrary();
+            if (!libraryReady || !window.docx) {
+                alert('Không tải được thư viện xuất DOCX. Vui lòng kiểm tra kết nối mạng và thử lại.');
+                return;
+            }
+
+            var name = lastSearchResult.name || 'NguoiDung';
+            var year = lastSearchResult.year || '';
+            var activities = lastSearchResult.activities;
+            var allActivities = lastSearchResult.allActivities || [];
+            var authorMap = buildAuthorMap(allActivities);
+            var totalScore = activities.reduce(function(sum, a) { return sum + (a.score || 0); }, 0);
+            var roleNames = { first: 'Tác giả chính', corresponding: 'Tác giả liên hệ', last: 'Tác giả cuối', coauthor: 'Đồng tác giả' };
+            var d = window.docx;
+            var now = new Date();
+            var dateTimeText = now.toLocaleString('vi-VN');
+
+            var logoImageRun = null;
+            if (DOC_LOGO_URL) {
+                try {
+                    var logoRes = await fetch(DOC_LOGO_URL);
+                    var logoBuffer = await logoRes.arrayBuffer();
+                    logoImageRun = new d.ImageRun({
+                        data: logoBuffer,
+                        transformation: { width: 60, height: 60 }
+                    });
+                } catch (err) {
+                    console.warn('Không tải được logo:', err);
+                }
+            }
+
+            var tableHeaderLabels = [
+                { text: 'STT', width: 5 },
+                { text: 'Tên công trình', width: 20 },
+                { text: 'Tên tạp chí', width: 13 },
+                { text: 'Loại hoạt động', width: 8 },
+                { text: 'Xếp hạng', width: 7 },
+                { text: 'Vai trò', width: 7 },
+                { text: 'Danh sách tác giả', width: 12 },
+                { text: 'H tối đa', width: 6 },
+                { text: 'Điểm', width: 6 },
+                { text: 'Công thức tính điểm', width: 16 }
+            ];
+
+            var headerCells = tableHeaderLabels.map(function(col) {
+                    return new d.TableCell({
+                        width: { size: col.width, type: d.WidthType.PERCENTAGE },
+                        children: [new d.Paragraph({
+                            children: [new d.TextRun({ text: col.text, bold: true, size: 22 })]
+                        })]
+                    });
+                });
+
+            var tableRows = [
+                new d.TableRow({ children: headerCells })
+            ];
+
+            activities.forEach(function(a, index) {
+                var rankingText = (a.ranking || '').toString().trim() || 'Chưa có';
+                var H = parseInt(a.H) || 600;
+                var roleName = roleNames[a.role] || a.role || 'Chưa xác định';
+                var activityType = getActivityType(a);
+                var authorNames = getAuthorNamesForActivity(a, allActivities, authorMap);
+                var formulaText = getScoreFormulaText(a);
+
+                var authorParts = [];
+                authorNames.forEach(function(author, idx) {
+                    if (idx > 0) authorParts.push({ text: ', ', bold: false });
+                    authorParts.push({ text: author, bold: isSamePerson(author, name) });
+                });
+                if (authorParts.length === 0) authorParts.push({ text: '', bold: false });
+
+                tableRows.push(
+                    new d.TableRow({
+                        children: [
+                            new d.TableCell({ children: [new d.Paragraph({ children: [new d.TextRun({ text: String(index + 1), size: 22 })] })] }),
+                            new d.TableCell({ children: [new d.Paragraph({ children: [new d.TextRun({ text: a.title || 'Không có tiêu đề', size: 22 })] })] }),
+                            new d.TableCell({ children: [new d.Paragraph({ children: [new d.TextRun({ text: a.journal || '', size: 22 })] })] }),
+                            new d.TableCell({ children: [new d.Paragraph({ children: [new d.TextRun({ text: activityType, size: 22 })] })] }),
+                            new d.TableCell({ children: [new d.Paragraph({ children: [new d.TextRun({ text: rankingText, size: 22 })] })] }),
+                            new d.TableCell({ children: [new d.Paragraph({ children: [new d.TextRun({ text: roleName, size: 22 })] })] }),
+                            new d.TableCell({ children: [new d.Paragraph({ children: authorParts.map(function(part) {
+                                return new d.TextRun({ text: part.text || '', bold: !!part.bold, size: 22 });
+                            }) })] }),
+                            new d.TableCell({ children: [new d.Paragraph({ children: [new d.TextRun({ text: String(H), size: 22 })] })] }),
+                            new d.TableCell({ children: [new d.Paragraph({ children: [new d.TextRun({ text: String(a.score || 0), size: 22 })] })] }),
+                            new d.TableCell({ children: [new d.Paragraph({ children: [new d.TextRun({ text: formulaText, size: 22 })] })] })
+                        ]
+                    })
+                );
+            });
+
+            var doc = new d.Document({
+                styles: {
+                    default: {
+                        document: {
+                            run: {
+                                font: 'Times New Roman',
+                                size: 26
+                            }
+                        }
+                    }
+                },
+                sections: [{
+                    properties: {
+                        page: {
+                            margin: {
+                                top: 1134,
+                                right: 1134,
+                                bottom: 1134,
+                                left: 1701
+                            }
+                        }
+                    },
+                    footers: {
+                        default: new d.Footer({
+                            children: [
+                                new d.Paragraph({
+                                    alignment: d.AlignmentType.RIGHT,
+                                    children: [
+                                        new d.TextRun('Trang '),
+                                        d.PageNumber.CURRENT,
+                                        new d.TextRun(' / '),
+                                        d.PageNumber.TOTAL_PAGES
+                                    ]
+                                })
+                            ]
+                        })
+                    },
+                    children: [
+                        new d.Table({
+                            width: { size: 100, type: d.WidthType.PERCENTAGE },
+                            borders: {
+                                top: { style: d.BorderStyle.SINGLE, size: 6, color: 'A6A6A6' },
+                                bottom: { style: d.BorderStyle.SINGLE, size: 6, color: 'A6A6A6' },
+                                left: { style: d.BorderStyle.SINGLE, size: 6, color: 'A6A6A6' },
+                                right: { style: d.BorderStyle.SINGLE, size: 6, color: 'A6A6A6' },
+                                insideHorizontal: { style: d.BorderStyle.SINGLE, size: 6, color: 'A6A6A6' },
+                                insideVertical: { style: d.BorderStyle.SINGLE, size: 6, color: 'A6A6A6' }
+                            },
+                            rows: [
+                                new d.TableRow({
+                                    children: [
+                                        new d.TableCell({
+                                            width: { size: 45, type: d.WidthType.PERCENTAGE },
+                                            children: [
+                                                new d.Paragraph({
+                                                    spacing: { after: 60 },
+                                                            children: logoImageRun ? [logoImageRun] : [new d.TextRun({ text: '[Logo đơn vị]', italics: true, size: 24, color: '7A7A7A' })]
+                                                }),
+                                                new d.Paragraph({
+                                                    alignment: d.AlignmentType.CENTER,
+                                                    spacing: { after: 40 },
+                                                            children: [new d.TextRun({ text: DOC_UNIT_NAME, bold: true, allCaps: true, size: 24, color: '7A7A7A' })]
+                                                }),
+                                                new d.Paragraph({
+                                                    alignment: d.AlignmentType.CENTER,
+                                                    spacing: { after: 40 },
+                                                            children: [new d.TextRun({ text: DOC_ORG_LINE, bold: true, allCaps: true, size: 24, color: '7A7A7A' })]
+                                                })
+                                            ]
+                                        }),
+                                        new d.TableCell({
+                                            width: { size: 55, type: d.WidthType.PERCENTAGE },
+                                            children: [
+                                                new d.Paragraph({
+                                                    alignment: d.AlignmentType.CENTER,
+                                                    spacing: { after: 30 },
+                                                    children: [new d.TextRun({ text: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', bold: true, allCaps: true, size: 24, color: '7A7A7A' })]
+                                                }),
+                                                new d.Paragraph({
+                                                    alignment: d.AlignmentType.CENTER,
+                                                    spacing: { after: 50 },
+                                                    children: [new d.TextRun({ text: 'Độc lập - Tự do - Hạnh phúc', bold: true, size: 24, color: '7A7A7A' })]
+                                                }),
+                                                new d.Paragraph({
+                                                    alignment: d.AlignmentType.CENTER,
+                                                    spacing: { after: 20 },
+                                                    border: {
+                                                        bottom: { color: '7A7A7A', space: 1, style: d.BorderStyle.SINGLE, size: 8 }
+                                                    },
+                                                    children: [new d.TextRun('')]
+                                                })
+                                            ]
+                                        })
+                                    ]
+                                })
+                            ]
+                        }),
+                        new d.Paragraph({ spacing: { after: 20 }, children: [new d.TextRun('')] }),
+                        new d.Paragraph({
+                            alignment: d.AlignmentType.CENTER,
+                            spacing: { before: 60, after: 180 },
+                            children: [
+                                new d.TextRun({
+                                    text: 'HỒ SƠ HOẠT ĐỘNG KHOA HỌC CÔNG NGHỆ NĂM ' + year,
+                                    bold: true,
+                                    color: '2F75B5',
+                                    allCaps: true,
+                                    size: 24
+                                })
+                            ]
+                        }),
+                        new d.Paragraph({
+                            alignment: d.AlignmentType.RIGHT,
+                            spacing: { after: 120 },
+                            children: [new d.TextRun({ text: 'Ngày ' + now.getDate() + ' tháng ' + (now.getMonth() + 1) + ' năm ' + now.getFullYear(), italics: true, size: 24 })]
+                        }),
+                        new d.Paragraph({ spacing: { after: 20 }, children: [new d.TextRun({ text: 'Họ và tên: ', bold: true, size: 24 }), new d.TextRun({ text: name, size: 24, allCaps: true })] }),
+                        new d.Paragraph({ spacing: { after: 20 }, children: [new d.TextRun({ text: 'Năm kê khai: ', bold: true, size: 24 }), new d.TextRun({ text: String(year), size: 24 })] }),
+                        new d.Paragraph({ spacing: { after: 30 }, children: [new d.TextRun({ text: 'Ngày xuất: ', bold: true, size: 24 }), new d.TextRun({ text: dateTimeText, size: 24 })] }),
+                        new d.Paragraph({
+                            spacing: { after: 180 },
+                            children: [
+                                new d.TextRun({ text: 'Tổng điểm KPI: ', bold: true, size: 24 }),
+                                new d.TextRun({ text: totalScore.toLocaleString() + ' giờ', size: 24 }),
+                                new d.TextRun({ text: ' | ', size: 24 }),
+                                new d.TextRun({ text: 'Tổng số hoạt động: ', bold: true, size: 24 }),
+                                new d.TextRun({ text: String(activities.length), size: 24 })
+                            ]
+                        }),
+                        new d.Paragraph({ text: 'I. Danh sách chi tiết hoạt động', heading: d.HeadingLevel.HEADING_2 }),
+                        new d.Table({
+                            rows: tableRows,
+                            width: { size: 100, type: d.WidthType.PERCENTAGE }
+                        }),
+                        new d.Paragraph(''),
+                        new d.Paragraph({
+                            alignment: d.AlignmentType.RIGHT,
+                            children: [new d.TextRun({ text: 'Người lập biểu', bold: true })]
+                        }),
+                        new d.Paragraph({
+                            alignment: d.AlignmentType.RIGHT,
+                            children: [new d.TextRun({ text: '(Ký và ghi rõ họ tên)', italics: true })]
+                        }),
+                        new d.Paragraph(''),
+                        new d.Paragraph({
+                            alignment: d.AlignmentType.RIGHT,
+                            children: [new d.TextRun({ text: name, bold: true })]
+                        }),
+                        new d.Paragraph({
+                            children: [new d.TextRun({ text: 'Ghi chú: Để hiển thị logo đơn vị, cập nhật biến DOC_LOGO_URL trong mã nguồn.', italics: true, size: 22 })]
+                        })
+                    ]
+                }]
+            });
+
+            try {
+                var blob = await d.Packer.toBlob(doc);
+                var safeName = normalizeName(name) || 'ho_so';
+                var filename = 'ho-so-khcn-' + safeName + '-' + year + '.docx';
+                saveBlobFile(blob, filename);
+            } catch (error) {
+                alert('Không thể xuất DOCX: ' + error.message);
+            }
+        }
+
         function displayResults(name, activities, year, allActivities) {
             document.getElementById('searchView').classList.add('hidden');
             document.getElementById('resultView').classList.remove('hidden');
@@ -267,26 +661,17 @@
             var totalScore = activities.reduce(function(sum, a) { return sum + (a.score || 0); }, 0);
             document.getElementById('totalScore').textContent = totalScore.toLocaleString() + ' giờ';
             document.getElementById('activityCount').textContent = activities.length + ' hoạt động';
+            var authorMap = buildAuthorMap(allActivities);
+            lastSearchResult = {
+                name: name,
+                year: year,
+                activities: activities,
+                allActivities: allActivities
+            };
             
             var listHTML = activities.map(function(a) {
-                var categoryNames = { paper: 'Bài báo', book: 'Sách', ip: 'Sở hữu trí tuệ', project: 'Đề tài', award: 'Giải thưởng', conference: 'Hội nghị' };
-                var roleNames = { first: 'First Author', corresponding: 'Corresponding', last: 'Last Author', coauthor: 'Co-author' };
-                
-                var activityType = 'Hoạt động KHCN';
-                if (a.quartile) {
-                    var qStr = a.quartile.toString().toLowerCase();
-                    if (qStr.indexOf('q1') !== -1 || qStr.indexOf('q2') !== -1 || qStr.indexOf('q3') !== -1 || qStr.indexOf('q4') !== -1) {
-                        activityType = 'Tạp chí';
-                    } else if (qStr.indexOf('hoi nghi') !== -1 || qStr.indexOf('conference') !== -1) {
-                        activityType = 'Hội nghị';
-                    } else if (qStr.indexOf('patent') !== -1 || qStr.indexOf('so huu') !== -1) {
-                        activityType = 'Sở hữu trí tuệ';
-                    } else if (qStr.indexOf('de tai') !== -1 || qStr.indexOf('project') !== -1) {
-                        activityType = 'Đề tài KHCN';
-                    } else if (qStr.indexOf('giai thuong') !== -1 || qStr.indexOf('award') !== -1) {
-                        activityType = 'Giải thưởng';
-                    }
-                }
+                var roleNames = { first: 'Tác giả chính', corresponding: 'Tác giả liên hệ', last: 'Tác giả cuối', coauthor: 'Đồng tác giả' };
+                var activityType = getActivityType(a);
                 
                 var roleName = roleNames[a.role] || '';
                 var rankingText = (a.ranking || '').toString().trim();
@@ -305,13 +690,13 @@
                         var part1 = Math.round((H * 1/3) * (1/K));
                         var part2 = Math.round((H * 2/3) * (1/A));
                         formula = '<strong>Tác giả chính thuộc Viện:</strong><br/>' +
-                                 'Rổ 1: (1/3 × ' + H + ') × (1/' + K + ') = ' + part1 + 'h<br/>' +
-                                 'Rổ 2: (2/3 × ' + H + ') × (1/' + A + ') = ' + part2 + 'h<br/>' +
+                                 'Phần vai trò chính: (1/3 × ' + H + ') × (1/' + K + ') = ' + part1 + 'h<br/>' +
+                                 'Phần chia theo nhóm tác giả: (2/3 × ' + H + ') × (1/' + A + ') = ' + part2 + 'h<br/>' +
                                  '<strong>Tổng: ' + (part1 + part2) + 'h</strong>';
                     } else {
                         var part2 = Math.round((H * 2/3) * (1/A));
-                        formula = '<strong>Co-author thuộc Viện:</strong><br/>' +
-                                 'Rổ 2: (2/3 × ' + H + ') × (1/' + A + ') = ' + part2 + 'h';
+                        formula = '<strong>Đồng tác giả thuộc Viện:</strong><br/>' +
+                                 'Phần chia theo nhóm tác giả: (2/3 × ' + H + ') × (1/' + A + ') = ' + part2 + 'h';
                     }
                 }
                 
@@ -319,30 +704,17 @@
                 var quartileBadge = a.quartile ? '<span class="badge badge-quartile">' + a.quartile + '</span>' : '';
                 var roleBadge = roleName ? '<span class="badge badge-role">' + roleName + '</span>' : '';
                 
-                var relatedActivities = [];
-                if (a.stt !== '') {
-                    relatedActivities = (allActivities || []).filter(function(item) {
-                        return item.stt === a.stt;
-                    });
-                } else {
-                    relatedActivities = (allActivities || []).filter(function(item) {
-                        return item.title === a.title && item.journal === a.journal && item.year === a.year;
-                    });
-                }
+                var authorNames = getAuthorNamesForActivity(a, allActivities, authorMap);
                 
-                var authorNames = [];
-                relatedActivities.forEach(function(item) {
-                    if (item.authorName && authorNames.indexOf(item.authorName) === -1) {
-                        authorNames.push(item.authorName);
+                var formattedAuthorNames = authorNames.map(function(author) {
+                    if (isSamePerson(author, name)) {
+                        return '<strong style="color:#2d3748;">' + author + '</strong>';
                     }
+                    return author;
                 });
-                
-                if (authorNames.length === 0 && a.authorName) {
-                    authorNames.push(a.authorName);
-                }
-                
+
                 var authorListHtml = authorNames.length > 0
-                    ? '<div style="color:#4a5568;font-size:0.9em;margin:8px 0 10px;"><strong>Tác giả:</strong> ' + authorNames.join(', ') + '</div>'
+                    ? '<div style="color:#4a5568;font-size:0.9em;margin:8px 0 10px;"><strong>Tác giả:</strong> ' + formattedAuthorNames.join(', ') + '</div>'
                     : '';
                 var authorBadge = authorNames.length > 1 ? '<span class="badge">' + authorNames.length + ' tác giả</span>' : '';
                 var detailInfoHtml = '<div style="color:#4a5568;font-size:0.9em;line-height:1.6;margin:6px 0 10px;">' +
@@ -364,7 +736,7 @@
                     '</div>' +
                     authorListHtml +
                     detailInfoHtml +
-                    '<div style="background:#f0f4ff;padding:12px;border-radius:8px;margin:10px 0;font-size:0.85em;color:#4c51bf;line-height:1.6;">' +
+                    '<div style="background:#dfe8ff;border:1px solid #b8c8ff;padding:12px;border-radius:8px;margin:10px 0;font-size:0.85em;color:#2f4aa0;line-height:1.6;">' +
                         '<div style="font-weight:600;margin-bottom:5px;">📐 Công thức tính điểm:</div>' +
                         '<div style="font-family:monospace;">' + formula + '</div>' +
                     '</div>' +
@@ -387,6 +759,7 @@
         
         document.getElementById('searchBtn').addEventListener('click', searchKPI);
         document.getElementById('backBtn').addEventListener('click', goBack);
+        document.getElementById('exportWordBtn').addEventListener('click', exportToWord);
         
         loadAvailableYears();
         
