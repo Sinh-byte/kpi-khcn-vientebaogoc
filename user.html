@@ -92,6 +92,10 @@
         var DOC_UNIT_NAME = 'VIỆN TẾ BÀO GỐC';
         var DOC_ORG_LINE = 'PHÒNG KHCN&QHĐN';
         var DOC_LOGO_URL = '';
+        var DOC_SIGNER_ROLE = 'TP, PHÒNG KHCN&QHĐN';
+        var DOC_SIGNER_NAME = 'NGUYỄN TRƯỜNG SINH';
+        var DOC_SIGN_BLOCK_LEFT_INDENT = 5200;
+        var DOC_SIGN_BLOCK_RIGHT_INDENT = 200;
         
         function loadAvailableYears() {
             console.log('Loading available years...');
@@ -625,20 +629,22 @@
                         }),
                         new d.Paragraph(''),
                         new d.Paragraph({
-                            alignment: d.AlignmentType.RIGHT,
-                            children: [new d.TextRun({ text: 'Người lập biểu', bold: true })]
+                            alignment: d.AlignmentType.CENTER,
+                            indent: { left: DOC_SIGN_BLOCK_LEFT_INDENT, right: DOC_SIGN_BLOCK_RIGHT_INDENT },
+                            spacing: { before: 120, after: 80 },
+                            children: [new d.TextRun({ text: 'Người lập biểu', bold: true, size: 22 })]
                         }),
                         new d.Paragraph({
-                            alignment: d.AlignmentType.RIGHT,
-                            children: [new d.TextRun({ text: '(Ký và ghi rõ họ tên)', italics: true })]
-                        }),
-                        new d.Paragraph(''),
-                        new d.Paragraph({
-                            alignment: d.AlignmentType.RIGHT,
-                            children: [new d.TextRun({ text: name, bold: true })]
+                            alignment: d.AlignmentType.CENTER,
+                            indent: { left: DOC_SIGN_BLOCK_LEFT_INDENT, right: DOC_SIGN_BLOCK_RIGHT_INDENT },
+                            spacing: { after: 120 },
+                            children: [new d.TextRun({ text: DOC_SIGNER_ROLE, bold: true, size: 22 })]
                         }),
                         new d.Paragraph({
-                            children: [new d.TextRun({ text: 'Ghi chú: Để hiển thị logo đơn vị, cập nhật biến DOC_LOGO_URL trong mã nguồn.', italics: true, size: 22 })]
+                            alignment: d.AlignmentType.CENTER,
+                            indent: { left: DOC_SIGN_BLOCK_LEFT_INDENT, right: DOC_SIGN_BLOCK_RIGHT_INDENT },
+                            spacing: { before: 1400, after: 0 },
+                            children: [new d.TextRun({ text: DOC_SIGNER_NAME, bold: true, allCaps: true, size: 22 })]
                         })
                     ]
                 }]
