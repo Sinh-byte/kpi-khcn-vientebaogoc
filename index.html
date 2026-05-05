@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Quản lý KPI</title>
+    <title>KPI Nghiên cứu viên SCI</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); min-height: 100vh; padding: 20px; }
@@ -33,13 +33,15 @@
         .preview-table th, .preview-table td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; }
         .preview-table th { background: #4c51bf; color: white; font-weight: 600; position: sticky; top: 0; }
         .preview-table td { background: white; }
+        .site-orgline { text-align: center; font-weight: 800; color: #2d3748; margin-bottom: 8px; letter-spacing: 0.2px; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
     <div id="loginView" class="container login-container">
+        <div class="site-orgline">Viện Tế bào gốc - Trường ĐHKHTN, ĐHQG TP.HCM</div>
         <h1>🔐 Admin Login</h1>
-        <p class="subtitle">Nhập mật khẩu để tiếp tục</p>
+        <p class="subtitle"><strong>Hệ thống Tra cứu KPI KHCN</strong><br>Nhập mật khẩu để tiếp tục</p>
         <input type="password" id="passwordInput" placeholder="Mật khẩu admin">
         <button id="loginBtn" style="width: 100%;">Đăng nhập</button>
         <button id="backBtn" style="width: 100%; margin-top: 10px;" class="btn-secondary">← Trang tra cứu User</button>
@@ -47,7 +49,7 @@
 
     <div id="dashboardView" class="container hidden">
         <div style="display:flex;justify-content:space-between;margin-bottom:30px;flex-wrap:wrap;">
-            <div><h1>⚙️ Admin Dashboard</h1><p class="subtitle">Quản lý dữ liệu KPI với Google Sheets</p></div>
+            <div><div class="site-orgline" style="text-align:left;margin-bottom:6px;">Viện Tế bào gốc - Trường ĐHKHTN, ĐHQG TP.HCM</div><h1>⚙️ Admin Dashboard</h1><p class="subtitle"><strong>Hệ thống Tra cứu KPI KHCN</strong><br>Quản lý dữ liệu KPI với Google Sheets</p></div>
             <div>
                 <button id="viewUserBtn" class="btn-secondary">👁️ Trang tra cứu User</button>
                 <button id="logoutBtn" class="btn-danger" style="margin-left: 10px;">🚪 Đăng xuất</button>

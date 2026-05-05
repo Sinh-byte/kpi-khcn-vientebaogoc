@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tra cứu KPI Nghiên cứu viên</title>
+    <title>KPI Nghiên cứu viên SCI</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
@@ -124,14 +124,16 @@
         .error-message { background: #fed7d7; border-left: 4px solid #e53e3e; padding: 15px; border-radius: 8px; margin-top: 20px; color: #742a2a; }
         #resultView h1 { margin-bottom: 6px; }
         #resultView .subtitle { margin-bottom: 10px; }
+        .site-orgline { text-align: center; font-weight: 700; letter-spacing: 0.2px; color: #2d3748; margin-bottom: 10px; }
+
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
 </head>
 <body>
     <div class="container">
         <div id="searchView">
-            <h1>🔍 Tra cứu KPI Nghiên cứu viên</h1>
-            <p class="subtitle">Nhập họ tên để xem điểm KPI của bạn</p>
+            <div class="site-orgline">Viện Tế bào gốc - Trường ĐHKHTN, ĐHQG TP.HCM</div>
+            <p class="subtitle"><strong style="color:#1e40af;font-size:1.25em;">Hệ thống Tra cứu KPI KHCN</strong><br>Nhập họ tên để xem điểm KPI của bạn</p>
             <div class="search-box">
                 <label for="yearSelect">Chọn năm tra cứu:</label>
                 <select id="yearSelect" style="margin-bottom: 15px;">
@@ -2127,7 +2129,7 @@
                 var formula = getDisplayFormulaHtml(a, allActivities, kOverride);
 
                 var kRow = '';
-                if (isEffectivePrimary(a) && A > 1) {
+                if (isAdminSession() && isEffectivePrimary(a) && A > 1) {
                     var opts = '<option value="auto"' + (kOverride === undefined ? ' selected' : '') + '>Tự động (mặc định: ' + autoK + ')</option>';
                     for (var kv = 1; kv <= 4; kv++) {
                         opts += '<option value="' + kv + '"' + (kOverride === kv ? ' selected' : '') + '>' + kv + '</option>';
