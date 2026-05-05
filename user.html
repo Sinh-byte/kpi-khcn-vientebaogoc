@@ -8,6 +8,12 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
         .container { max-width: 900px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); padding: 40px; }
+        .help-sidebar { position: fixed; top: 20px; left: 20px; width: 320px; max-height: calc(100vh - 40px); overflow: auto; background: rgba(255,255,255,0.96); border: 1px solid rgba(226,232,240,0.9); border-radius: 14px; padding: 14px 14px 12px; box-shadow: 0 14px 40px rgba(0,0,0,0.22); }
+        .help-sidebar .hs-title { font-weight: 800; color: #2d3748; margin-bottom: 10px; }
+        .help-sidebar ul { margin: 0; padding-left: 18px; color: #2d3748; }
+        .help-sidebar li { margin: 0 0 10px 0; line-height: 1.45; font-size: 0.92em; }
+        .help-sidebar .hs-note { font-size: 0.86em; color: #718096; margin-top: 10px; line-height: 1.4; }
+        @media (max-width: 1280px) { .help-sidebar { display: none; } }
         h1 { color: #4c51bf; font-size: 2.5em; margin-bottom: 10px; text-align: center; }
         .subtitle { color: #718096; text-align: center; margin-bottom: 40px; font-size: 1.1em; }
         .search-box { background: #f7fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 30px; margin-bottom: 30px; }
@@ -20,27 +26,104 @@
         .btn-export { background: linear-gradient(135deg, #2f855a 0%, #276749 100%); }
         .info-box { background: #fef5e7; border-left: 4px solid #f39c12; padding: 15px; border-radius: 8px; margin-top: 20px; font-size: 0.95em; color: #7f6e0a; }
         .loading { text-align: center; color: #4c51bf; margin-top: 20px; font-size: 1.1em; }
-        .result { margin-top: 40px; }
-        .total-score { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 30px; }
-        .total-score h2 { font-size: 1.2em; opacity: 0.9; margin-bottom: 10px; }
-        .total-score .score { font-size: 3em; font-weight: bold; }
-        .activities { max-height: 500px; overflow-y: auto; }
+        .result { margin-top: 10px; }
+        .total-score { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 18px; border-radius: 12px; text-align: center; margin-bottom: 10px; }
+        .total-score h2 { font-size: 1.02em; opacity: 0.92; margin-bottom: 4px; }
+        .total-score .score { font-size: 2.35em; font-weight: bold; line-height: 1.1; }
+        .total-score .count { font-size: 0.92em; opacity: 0.95; margin-top: 2px; }
+        .activities { max-height: 620px; overflow-y: auto; }
         .activity-card { background: #f7fafc; border-left: 4px solid #4c51bf; padding: 20px; margin-bottom: 15px; border-radius: 10px; transition: all 0.3s; }
         .activity-card:hover { box-shadow: 0 5px 15px rgba(0,0,0,0.1); transform: translateX(5px); }
-        .activity-title { color: #2d3748; font-size: 1.1em; font-weight: 600; margin-bottom: 8px; }
+        .activity-title { color: #2d3748; font-size: 1.1em; font-weight: 600; margin-bottom: 8px; display: flex; align-items: baseline; gap: 0.4em; }
+        .activity-index-num { flex-shrink: 0; color: #5a67d8; font-weight: 700; font-variant-numeric: tabular-nums; }
         .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
         .badge { padding: 5px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 600; }
         .badge-category { background: #bee3f8; color: #2c5282; }
         .badge-quartile { background: #c6f6d5; color: #22543d; }
         .badge-role { background: #e9d8fd; color: #553c9a; }
         .activity-score { text-align: right; font-size: 2em; font-weight: bold; color: #4c51bf; }
+        .k-override-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 12px 0;
+            padding: 14px 16px;
+            background: #ffffff;
+            border: 1px solid #b8c9f0;
+            border-left: 4px solid #5a67d8;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(90, 103, 216, 0.12), 0 1px 3px rgba(0, 0, 0, 0.06);
+            font-size: 0.9em;
+        }
+        .k-override-row label { margin: 0; font-weight: 600; color: #1a202c; display: inline; }
+        .k-override-row select.k-override-select {
+            width: auto;
+            min-width: 150px;
+            max-width: 240px;
+            padding: 8px 12px;
+            margin: 0;
+            background: #f8fafc;
+            border: 2px solid #94a3b8;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+        }
+        .k-override-row select.k-override-select:focus {
+            border-color: #5a67d8;
+            box-shadow: 0 0 0 3px rgba(90, 103, 216, 0.2);
+        }
+        .k-hint { color: #4a5568; font-size: 0.82em; line-height: 1.45; flex-basis: 100%; }
+        .formula-k-note { font-size: 0.8em; font-style: italic; color: #4a5568; margin-top: 8px; line-height: 1.35; }
+        .admin-consensus-row { margin: 10px 0 0; padding: 10px 12px; background: #f0fff4; border: 1px solid #9ae6b4; border-radius: 8px; font-size: 0.88em; }
+        .admin-consensus-row.consensus-row-muted { opacity: 0.45; background: #edf2f7; border-color: #cbd5e0; }
+        .admin-consensus-row label { display: flex; align-items: flex-start; gap: 10px; font-weight: 500; margin: 0; cursor: pointer; color: #2d3748; }
+        .admin-consensus-row input[type="checkbox"]:disabled { cursor: not-allowed; }
+        .admin-consensus-hint { font-size: 0.82em; color: #718096; margin-top: 8px; line-height: 1.4; }
+        .admin-allocation-row { margin: 10px 0 0; padding: 10px 12px; background: #fffaf0; border: 1px solid #f6ad55; border-radius: 8px; font-size: 0.88em; }
+        .admin-allocation-row label { display: flex; align-items: center; gap: 10px; font-weight: 500; margin: 0 0 8px 0; color: #2d3748; }
+        .admin-allocation-row select { width: auto; min-width: 210px; max-width: 320px; padding: 7px 10px; margin: 0; font-size: 0.9em; }
+        .admin-allocation-hint { font-size: 0.82em; color: #744210; line-height: 1.4; }
+        .admin-allocation-assign { margin-top: 8px; width: auto; padding: 8px 12px; font-size: 0.88em; border-radius: 8px; background: linear-gradient(135deg, #dd6b20 0%, #c05621 100%); }
+        .admin-allocation-lock { margin-top: 8px; width: auto; padding: 8px 12px; font-size: 0.88em; border-radius: 8px; background: linear-gradient(135deg, #2f855a 0%, #276749 100%); }
+        .admin-allocation-lock.unlock { background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%); }
+        .admin-heff-row { margin: 10px 0; padding: 10px 12px; background: #eef6ff; border: 1px solid #90cdf4; border-radius: 8px; font-size: 0.88em; }
+        .admin-heff-row label { display: flex; align-items: center; gap: 8px; margin: 0 0 8px 0; color: #2a4365; font-weight: 500; }
+        .admin-heff-row input[type="number"] { width: 120px; padding: 6px 8px; font-size: 0.88em; border: 1px solid #a0aec0; border-radius: 6px; }
+        .admin-heff-row input[type="number"].heff-input-invalid { border-color: #e53e3e; background: #fff5f5; box-shadow: inset 0 0 0 1px rgba(229, 62, 62, 0.1); }
+        .admin-heff-row input[type="number"].heff-input-invalid:focus { outline: none; border-color: #c53030; box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.2); }
+        .admin-heff-hint { font-size: 0.82em; color: #2c5282; line-height: 1.4; }
+        .admin-project-flag-row { margin: 8px 0; padding: 8px 10px; background: #fffbea; border: 1px solid #f6e05e; border-radius: 8px; font-size: 0.84em; color: #744210; }
+        .admin-project-flag-row label { display: flex; align-items: flex-start; gap: 8px; margin: 0; font-weight: 500; color: #744210; }
+        .admin-project-rule-row { margin: 8px 0; padding: 8px 10px; background: #f0fff4; border: 1px solid #9ae6b4; border-radius: 8px; font-size: 0.84em; color: #22543d; }
+        .admin-project-rule-row input { width: 130px; padding: 6px 8px; border: 1px solid #a0aec0; border-radius: 6px; font-size: 0.84em; margin-left: 6px; }
+        /* Căn checkbox admin thẳng hàng ở đầu dòng */
+        .admin-heff-row label input[type="checkbox"],
+        .admin-project-flag-row label input[type="checkbox"],
+        .admin-project-rule-row label input[type="checkbox"] {
+            width: auto;
+            margin-top: 3px;
+            flex-shrink: 0;
+        }
+        .activity-card.activity-card-muted { opacity: 0.62; border-left-color: #a0aec0; background: #f8fafc; }
+        .formula-muted { opacity: 0.55; }
+        .admin-activity-panel { margin: 12px 0; padding: 12px 14px; background: #fff5f5; border: 1px solid #feb2b2; border-radius: 8px; font-size: 0.88em; }
+        .admin-activity-panel .admin-panel-title { font-weight: 700; color: #9b2c2c; margin-bottom: 10px; }
+        .admin-activity-panel label { display: flex; align-items: flex-start; gap: 10px; font-weight: 500; margin-bottom: 8px; cursor: pointer; color: #2d3748; }
+        .admin-activity-panel label:last-child { margin-bottom: 0; }
+        .admin-activity-panel input[type="checkbox"] { width: auto; margin-top: 3px; flex-shrink: 0; }
+        .admin-activity-panel .admin-panel-hint { font-size: 0.82em; color: #718096; margin-top: 8px; line-height: 1.4; }
+        .admin-flag-msg { padding: 8px 10px; border-radius: 6px; margin-bottom: 10px; font-size: 0.9em; line-height: 1.45; }
+        .admin-flag-msg.invalid { background: #fff5f5; color: #9b2c2c; border: 1px solid #fc8181; }
+        .admin-flag-msg.no-points { background: #fffaf0; color: #c05621; border: 1px solid #f6ad55; }
+        .admin-session-bar { background: #e6fffa; border: 1px solid #81e6d9; color: #234e52; padding: 8px 12px; border-radius: 8px; margin-bottom: 10px; font-size: 0.88em; }
         .back-button { background: #e2e8f0; color: #2d3748; margin-top: 20px; }
         .result-actions { display: flex; gap: 12px; margin-top: 20px; }
         .result-actions button { margin-top: 0; }
-        .hidden { display: none; }
+        .hidden { display: none !important; }
         .admin-link { text-align: center; margin-top: 20px; font-size: 0.9em; }
         .admin-link a { color: #4c51bf; text-decoration: none; }
         .error-message { background: #fed7d7; border-left: 4px solid #e53e3e; padding: 15px; border-radius: 8px; margin-top: 20px; color: #742a2a; }
+        #resultView h1 { margin-bottom: 6px; }
+        #resultView .subtitle { margin-bottom: 10px; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
 </head>
@@ -70,6 +153,7 @@
         <div id="resultView" class="hidden result">
             <h1>👤 Thông tin KPI</h1>
             <p class="subtitle" id="userName"></p>
+            <div id="adminSessionBar" class="admin-session-bar hidden">Bạn đang dùng chế độ quản trị: có thể đánh dấu hoạt động / tác giả không nhận điểm (lưu trên trình duyệt này).</div>
             <div class="total-score">
                 <h2>Tổng điểm KPI</h2>
                 <div class="score" id="totalScore">0 giờ</div>
@@ -79,16 +163,86 @@
             <div class="activities" id="activitiesList"></div>
             <div class="result-actions">
                 <button id="exportWordBtn" class="btn-export">📄 Xuất hồ sơ Word</button>
+                <button id="saveSnapshotBtn" class="btn-export hidden" style="background: linear-gradient(135deg, #3182ce 0%, #2b6cb0 100%);">💾 Lưu lượt tra cứu (Admin)</button>
+                <button id="openSnapshotsBtn" class="btn-export hidden" style="background: linear-gradient(135deg, #6b46c1 0%, #553c9a 100%);">📚 Lịch sử snapshot (Admin)</button>
                 <button id="backBtn" class="back-button">← Tra cứu người khác</button>
+            </div>
+
+            <div id="snapshotsModal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto;">
+                <div style="width: min(980px, 100%); background:#fff; border-radius:12px; padding:16px 16px 14px; box-shadow:0 20px 60px rgba(0,0,0,0.25);">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;">
+                        <div style="font-weight:800;color:#2d3748;font-size:1.05em;">📚 Lịch sử snapshot (Supabase)</div>
+                        <button id="closeSnapshotsBtn" class="back-button" style="margin:0;padding:8px 12px;">Đóng</button>
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:12px;">
+                        <div style="min-width:140px;">
+                            <div style="font-size:0.85em;color:#4a5568;margin-bottom:4px;">Năm</div>
+                            <input id="snapFilterYear" type="text" placeholder="Ví dụ 2025" style="width:140px;padding:8px 10px;border:1px solid #cbd5e0;border-radius:8px;">
+                        </div>
+                        <div style="flex:1;min-width:220px;">
+                            <div style="font-size:0.85em;color:#4a5568;margin-bottom:4px;">Tên nghiên cứu viên</div>
+                            <input id="snapFilterName" type="text" placeholder="Nhập tên để tìm..." style="width:100%;padding:8px 10px;border:1px solid #cbd5e0;border-radius:8px;">
+                        </div>
+                        <button id="loadSnapshotsBtn" class="btn-export" style="margin:0;background: linear-gradient(135deg, #6b46c1 0%, #553c9a 100%);">Tải danh sách</button>
+                    </div>
+                    <div id="snapshotsStatus" style="font-size:0.9em;color:#718096;margin-bottom:10px;"></div>
+                    <div id="snapshotsList" style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;"></div>
+                </div>
             </div>
         </div>
     </div>
 
+    <div id="helpSidebar" class="help-sidebar hidden">
+        <div class="hs-title">📌 Phụ lục 2 — Quy đổi giờ NCKH (QĐ 1296/QĐ-KHTN ngày 01/06/2024)</div>
+        <ul>
+            <li><strong>Cách xác định “tác giả chính”</strong>: với ấn phẩm/sản phẩm khoa học do tập thể biên soạn/thực hiện, tác giả chính được xác định là <strong>chủ biên/chủ công trình</strong>, hoặc các tác giả có vai trò <strong>First Author</strong>, <strong>Corresponding Author</strong>, <strong>Last Author</strong>.</li>
+            <li><strong>Quy đổi giờ theo tác giả thuộc Trường</strong>:
+                <ul>
+                    <li>Nếu tác giả chính thuộc <strong>Trường ĐH KHTN (ĐHQG-HCM)</strong> ⇒ tính <strong>100%</strong> định mức quy đổi.</li>
+                    <li>Nếu không ⇒ số giờ quy đổi được tính theo tỉ lệ: <strong>Giờ tối đa × (số tác giả thuộc Trường / tổng số tác giả)</strong>.</li>
+                </ul>
+            </li>
+            <li><strong>Cách 1 (thỏa thuận)</strong>:
+                <ul>
+                    <li>Các tác giả thuộc Trường có thể <strong>tự đề xuất</strong> phương án chia giờ quy đổi dựa trên <strong>thỏa thuận</strong>, đảm bảo quyền lợi và phù hợp đóng góp.</li>
+                    <li>Thông tin quy đổi phải do <strong>người đại diện hợp lệ</strong> cung cấp: vai trò <strong>First/Corresponding/Last Author</strong>.</li>
+                </ul>
+            </li>
+            <li><strong>Cách 2 (tự động – mặc định)</strong>:
+                <ul>
+                    <li>Nếu ấn phẩm chỉ gồm các <strong>tác giả chính</strong> ⇒ <strong>100%</strong> giờ quy đổi chia đều cho từng người (nếu &gt; 1 tác giả chính).</li>
+                    <li>Tác giả chính được tính <strong>\(1/3\)</strong> giờ quy đổi (chia đều cho các tác giả chính). Phần giờ còn lại chia theo giá trị/đóng góp của mỗi người (nếu không xác định được thì chia đều cho tất cả người tham gia, kể cả tác giả chính).</li>
+                </ul>
+            </li>
+            <li><strong>Sản phẩm là kết quả đề tài/dự án/chương trình NCKH</strong>: nếu được tính trong thời gian quy đổi của đề tài/dự án/chương trình ⇒ <strong>chỉ tính \(2/3\)</strong> giờ làm việc quy đổi.</li>
+            <li><strong>Ghi chú</strong>:
+                <ul>
+                    <li>Nếu sản phẩm là của đề tài/dự án/chương trình NCKH: do chủ nhiệm và các thành viên thống nhất, giờ quy đổi của sản phẩm <strong>tính \(2/3\)</strong>.</li>
+                    <li>Sản phẩm <strong>ngoài danh mục đăng ký</strong> của đề tài/dự án/chương trình NCKH: thay thế bằng sản phẩm khác có thể được tính đủ theo bảng quy đổi, nếu hội đồng xét thấy nhiệm vụ hoàn thành.</li>
+                    <li>Đề tài/dự án/chương trình kéo dài nhiều năm: giờ quy đổi được <strong>chia đều theo từng tháng</strong> thực hiện chính thức.</li>
+                </ul>
+            </li>
+        </ul>
+        
+    </div>
+
     <script>
         var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwb9fcZPwcG8QaX4AwrIfqAO7843xaXc2u7bTtioxK8sMcpz-XAadQHbLDlaBM0wdLc/exec';
+        var KPI_CONFIG_CLOUD_ENABLED = false;
+        var KPI_CONFIG_TOKEN = '';
+        var KPI_CONFIG_SUPABASE_ENABLED = false;
+        var SUPABASE_URL = '';
+        var SUPABASE_ANON_KEY = '';
+        var SUPABASE_KPI_CONFIG_TABLE = 'kpi_config_entries';
+        var SUPABASE_DATA_ENABLED = false;
+        var SUPABASE_ACTIVITIES_TABLE = 'activities';
+        var SUPABASE_ACTIVITY_AUTHORS_TABLE = 'activity_authors';
+        var SUPABASE_SNAPSHOTS_TABLE = 'kpi_search_snapshots';
+        var cloudConfig = { invalidByGroup: {}, authorByRow: {}, allocationByGroup: {} };
         var cachedData = {};
         var availableYears = [];
         var lastSearchResult = null;
+        var kOverridesByIndex = {};
         var DOC_UNIT_NAME = 'VIỆN TẾ BÀO GỐC';
         var DOC_ORG_LINE = 'PHÒNG KHCN&QHĐN';
         var DOC_LOGO_URL = '';
@@ -96,11 +250,965 @@
         var DOC_SIGNER_NAME = 'NGUYỄN TRƯỜNG SINH';
         var DOC_SIGN_BLOCK_LEFT_INDENT = 5200;
         var DOC_SIGN_BLOCK_RIGHT_INDENT = 200;
-        
+        var LS_ADMIN_PREFIX = 'kpi_admin_v1_';
+        var LS_ADMIN_SNAPSHOTS_KEY = LS_ADMIN_PREFIX + 'search_snapshots';
+
+        function isAdminSession() {
+            return sessionStorage.getItem('adminAuth') === 'true';
+        }
+
+        function updateAdminSessionBar() {
+            var bar = document.getElementById('adminSessionBar');
+            if (!bar) return;
+            if (isAdminSession()) bar.classList.remove('hidden');
+            else bar.classList.add('hidden');
+        }
+
+        function getAuthorRowStorageKey(activity) {
+            return getActivityGroupKey(activity) + '||' + normalizeName(activity.authorName || '');
+        }
+
+        function lsKeyActivityInvalid(activity) {
+            return LS_ADMIN_PREFIX + 'inv:' + encodeURIComponent(getActivityGroupKey(activity));
+        }
+
+        function lsKeyAuthorNoPoints(activity) {
+            return LS_ADMIN_PREFIX + 'nap:' + encodeURIComponent(getAuthorRowStorageKey(activity));
+        }
+
+        function lsKeyAllocationMode(activity) {
+            return LS_ADMIN_PREFIX + 'allocmode:' + encodeURIComponent(getActivityGroupKey(activity));
+        }
+
+        function lsKeyAllocationAssignee(activity) {
+            return LS_ADMIN_PREFIX + 'allocassignee:' + encodeURIComponent(getActivityGroupKey(activity));
+        }
+
+        function lsKeyAgreementStrategy(activity) {
+            return LS_ADMIN_PREFIX + 'allocstrategy:' + encodeURIComponent(getActivityGroupKey(activity));
+        }
+
+        function lsKeyManualAllocHours(groupKey, authorNorm) {
+            return LS_ADMIN_PREFIX + 'allochours:' + encodeURIComponent(groupKey + '||' + (authorNorm || ''));
+        }
+
+        function getAllocationMode(activity) {
+            var gk = getActivityGroupKey(activity);
+            var cloudSlot = cloudConfig.allocationByGroup && cloudConfig.allocationByGroup[gk];
+            if (cloudSlot && cloudSlot.mode) return cloudSlot.mode === 'agreement' ? 'agreement' : 'auto';
+            var v = localStorage.getItem(lsKeyAllocationMode(activity));
+            return v === 'agreement' ? 'agreement' : 'auto';
+        }
+
+        function setAllocationMode(activity, mode) {
+            var gk = getActivityGroupKey(activity);
+            if (!cloudConfig.allocationByGroup) cloudConfig.allocationByGroup = {};
+            var slot = Object.assign({}, cloudConfig.allocationByGroup[gk] || {});
+            slot.mode = (mode === 'agreement') ? 'agreement' : 'auto';
+            if (slot.assignee === undefined) slot.assignee = getAllocationAssignee(activity);
+            cloudConfig.allocationByGroup[gk] = slot;
+            if (mode === 'agreement') localStorage.setItem(lsKeyAllocationMode(activity), 'agreement');
+            else localStorage.removeItem(lsKeyAllocationMode(activity));
+            pushAllocationToCloud(activity);
+        }
+
+        function getAgreementStrategy(activity) {
+            var gk = getActivityGroupKey(activity);
+            var cloudSlot = cloudConfig.allocationByGroup && cloudConfig.allocationByGroup[gk];
+            if (cloudSlot && cloudSlot.strategy) return cloudSlot.strategy === 'manual_split' ? 'manual_split' : 'single_assignee';
+            var v = localStorage.getItem(lsKeyAgreementStrategy(activity));
+            return v === 'manual_split' ? 'manual_split' : 'single_assignee';
+        }
+
+        function setAgreementStrategy(activity, strategy) {
+            var gk = getActivityGroupKey(activity);
+            if (!cloudConfig.allocationByGroup) cloudConfig.allocationByGroup = {};
+            var slot = Object.assign({}, cloudConfig.allocationByGroup[gk] || {});
+            slot.strategy = strategy === 'manual_split' ? 'manual_split' : 'single_assignee';
+            cloudConfig.allocationByGroup[gk] = slot;
+            if (slot.strategy === 'manual_split') localStorage.setItem(lsKeyAgreementStrategy(activity), 'manual_split');
+            else localStorage.removeItem(lsKeyAgreementStrategy(activity));
+            pushAllocationToCloud(activity);
+        }
+
+        function isAllocationLocked(activity) {
+            var gk = getActivityGroupKey(activity);
+            var cloudSlot = cloudConfig.allocationByGroup && cloudConfig.allocationByGroup[gk];
+            if (cloudSlot && cloudSlot.locked !== undefined) return !!cloudSlot.locked;
+            var k = LS_ADMIN_PREFIX + 'alloclocked:' + encodeURIComponent(gk);
+            return localStorage.getItem(k) === 'true';
+        }
+
+        function setAllocationLocked(activity, value) {
+            var gk = getActivityGroupKey(activity);
+            if (!cloudConfig.allocationByGroup) cloudConfig.allocationByGroup = {};
+            var slot = Object.assign({}, cloudConfig.allocationByGroup[gk] || {});
+            slot.locked = !!value;
+            cloudConfig.allocationByGroup[gk] = slot;
+            var k = LS_ADMIN_PREFIX + 'alloclocked:' + encodeURIComponent(gk);
+            if (value) localStorage.setItem(k, 'true');
+            else localStorage.removeItem(k);
+            pushAllocationToCloud(activity);
+        }
+
+        function getAllocationAssignee(activity) {
+            var gk = getActivityGroupKey(activity);
+            var cloudSlot = cloudConfig.allocationByGroup && cloudConfig.allocationByGroup[gk];
+            if (cloudSlot && cloudSlot.assignee) return cloudSlot.assignee;
+            return localStorage.getItem(lsKeyAllocationAssignee(activity)) || '';
+        }
+
+        function setAllocationAssignee(activity, authorNameOrNorm) {
+            var n = normalizeName(authorNameOrNorm || '');
+            var gk = getActivityGroupKey(activity);
+            if (!cloudConfig.allocationByGroup) cloudConfig.allocationByGroup = {};
+            var slot = Object.assign({}, cloudConfig.allocationByGroup[gk] || {});
+            slot.assignee = n;
+            if (slot.mode === undefined) slot.mode = getAllocationMode(activity);
+            cloudConfig.allocationByGroup[gk] = slot;
+            if (n) localStorage.setItem(lsKeyAllocationAssignee(activity), n);
+            else localStorage.removeItem(lsKeyAllocationAssignee(activity));
+            pushAllocationToCloud(activity);
+        }
+
+        function getManualAllocatedHoursByNorm(activity, authorNorm) {
+            var gk = getActivityGroupKey(activity);
+            var rowKey = gk + '||' + (authorNorm || '');
+            var slot = cloudConfig.authorByRow && cloudConfig.authorByRow[rowKey];
+            if (slot && slot.manualAllocHours !== undefined && slot.manualAllocHours !== null && slot.manualAllocHours !== '') {
+                var cn = parseInt(slot.manualAllocHours, 10);
+                if (!isNaN(cn) && cn >= 0) return cn;
+            }
+            var v = localStorage.getItem(lsKeyManualAllocHours(gk, authorNorm));
+            if (v === null || v === '') return null;
+            var n = parseInt(v, 10);
+            return (isNaN(n) || n < 0) ? null : n;
+        }
+
+        function setManualAllocatedHoursByNorm(activity, authorNorm, hours) {
+            var gk = getActivityGroupKey(activity);
+            var rowKey = gk + '||' + (authorNorm || '');
+            var k = lsKeyManualAllocHours(gk, authorNorm);
+            if (hours === undefined || hours === null || hours === '' || isNaN(hours)) localStorage.removeItem(k);
+            else localStorage.setItem(k, String(Math.max(0, parseInt(hours, 10))));
+            if (!cloudConfig.authorByRow) cloudConfig.authorByRow = {};
+            var slot = Object.assign({}, cloudConfig.authorByRow[rowKey] || {});
+            if (hours === undefined || hours === null || hours === '' || isNaN(hours)) slot.manualAllocHours = null;
+            else slot.manualAllocHours = Math.max(0, parseInt(hours, 10));
+            cloudConfig.authorByRow[rowKey] = slot;
+        }
+
+        function getActivityPoolHours(activity) {
+            return Math.round(getEffectiveHours(activity));
+        }
+
+        function getPrimaryOutsideForActivity(activity) {
+            var gk = getActivityGroupKey(activity);
+            var slot = cloudConfig.allocationByGroup && cloudConfig.allocationByGroup[gk];
+            if (slot && slot.primaryOutsideOverride !== undefined && slot.primaryOutsideOverride !== null) {
+                return !!slot.primaryOutsideOverride;
+            }
+            var raw = localStorage.getItem(LS_ADMIN_PREFIX + 'heff_out:' + encodeURIComponent(gk));
+            if (raw === 'true') return true;
+            if (raw === 'false') return false;
+            return !!activity.primaryOutsideUnit;
+        }
+
+        function isProjectRegisteredProduct(activity) {
+            var gk = getActivityGroupKey(activity);
+            var slot = cloudConfig.allocationByGroup && cloudConfig.allocationByGroup[gk];
+            if (slot && slot.projectRegisteredOverride !== undefined && slot.projectRegisteredOverride !== null) {
+                return !!slot.projectRegisteredOverride;
+            }
+            var raw = localStorage.getItem(LS_ADMIN_PREFIX + 'projreg:' + encodeURIComponent(gk));
+            return raw === 'true';
+        }
+
+        function normalizeActivityTypeForMatch(text) {
+            return (text || '').toString().toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/đ/g, 'd')
+                .replace(/[^a-z0-9]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        /** Chỉ loại "Đề tài KHCN" mới dùng cấu hình đề tài nhiều năm / phân bổ theo tháng. */
+        function isDeTaiKhCnActivity(activity) {
+            var key = normalizeActivityTypeForMatch((activity && activity.activityType) || '');
+            if (!key) return false;
+            return key.indexOf('de tai') !== -1 && key.indexOf('khcn') !== -1;
+        }
+
+        function getProjectRuleConfig(activity) {
+            var gk = getActivityGroupKey(activity);
+            var slot = cloudConfig.allocationByGroup && cloudConfig.allocationByGroup[gk];
+            if (!isDeTaiKhCnActivity(activity)) {
+                return {
+                    isProjectActivity: false,
+                    totalHours: null,
+                    startYm: '',
+                    endYm: ''
+                };
+            }
+            return {
+                isProjectActivity: slot && slot.isProjectActivityOverride !== undefined ? !!slot.isProjectActivityOverride : false,
+                totalHours: null,
+                startYm: slot && slot.projectStartYmOverride ? String(slot.projectStartYmOverride) : '',
+                endYm: slot && slot.projectEndYmOverride ? String(slot.projectEndYmOverride) : ''
+            };
+        }
+
+        function setProjectRuleConfig(activity, patch) {
+            var gk = getActivityGroupKey(activity);
+            if (!cloudConfig.allocationByGroup) cloudConfig.allocationByGroup = {};
+            var slot = Object.assign({}, cloudConfig.allocationByGroup[gk] || {});
+            Object.keys(patch).forEach(function(k) { slot[k] = patch[k]; });
+            cloudConfig.allocationByGroup[gk] = slot;
+            pushAllocationToCloud(activity);
+        }
+
+        function ymToIndex(ym) {
+            var m = /^(\d{4})-(\d{2})$/.exec(String(ym || ''));
+            if (!m) return null;
+            var y = parseInt(m[1], 10);
+            var mm = parseInt(m[2], 10);
+            if (isNaN(y) || isNaN(mm) || mm < 1 || mm > 12) return null;
+            return y * 12 + (mm - 1);
+        }
+
+        function getProjectYearHours(activity) {
+            if (!isDeTaiKhCnActivity(activity)) return null;
+            var cfg = getProjectRuleConfig(activity);
+            if (!cfg.isProjectActivity || !cfg.startYm || !cfg.endYm) return null;
+            var Htotal = parseInt(activity.H) || 600;
+            var s = ymToIndex(cfg.startYm);
+            var e = ymToIndex(cfg.endYm);
+            if (s === null || e === null || e < s) return null;
+            var y = parseInt(activity.year || (lastSearchResult && lastSearchResult.year), 10);
+            if (isNaN(y)) return null;
+            var ys = y * 12;
+            var ye = y * 12 + 11;
+            var overlapStart = Math.max(s, ys);
+            var overlapEnd = Math.min(e, ye);
+            if (overlapEnd < overlapStart) return 0;
+            var totalMonths = e - s + 1;
+            var yearMonths = overlapEnd - overlapStart + 1;
+            return (Htotal * yearMonths) / totalMonths;
+        }
+
+        function setProjectRegisteredProduct(activity, value) {
+            var gk = getActivityGroupKey(activity);
+            if (!cloudConfig.allocationByGroup) cloudConfig.allocationByGroup = {};
+            var slot = Object.assign({}, cloudConfig.allocationByGroup[gk] || {});
+            slot.projectRegisteredOverride = !!value;
+            cloudConfig.allocationByGroup[gk] = slot;
+            localStorage.setItem(LS_ADMIN_PREFIX + 'projreg:' + encodeURIComponent(gk), value ? 'true' : 'false');
+            pushAllocationToCloud(activity);
+        }
+
+        function getInUnitAuthorCountForActivity(activity) {
+            var A = parseInt(activity.totalAuthors) || 1;
+            var gk = getActivityGroupKey(activity);
+            var slot = cloudConfig.allocationByGroup && cloudConfig.allocationByGroup[gk];
+            var rawSlot = slot && slot.inUnitAuthorCountOverride;
+            var rawLs = localStorage.getItem(LS_ADMIN_PREFIX + 'heff_inunit:' + encodeURIComponent(gk));
+            var candidate = rawSlot;
+            if (candidate === undefined || candidate === null || candidate === '') candidate = rawLs;
+            if (candidate === undefined || candidate === null || candidate === '') {
+                candidate = activity.inUnitAuthorCount;
+            }
+            var n = parseInt(candidate, 10);
+            if (isNaN(n)) n = A;
+            return Math.max(0, Math.min(A, n));
+        }
+
+        function setPrimaryOutsideOverride(activity, value) {
+            var gk = getActivityGroupKey(activity);
+            if (!cloudConfig.allocationByGroup) cloudConfig.allocationByGroup = {};
+            var slot = Object.assign({}, cloudConfig.allocationByGroup[gk] || {});
+            slot.primaryOutsideOverride = !!value;
+            if (!value) slot.inUnitAuthorCountOverride = null;
+            cloudConfig.allocationByGroup[gk] = slot;
+            localStorage.setItem(LS_ADMIN_PREFIX + 'heff_out:' + encodeURIComponent(gk), value ? 'true' : 'false');
+            if (!value) localStorage.removeItem(LS_ADMIN_PREFIX + 'heff_inunit:' + encodeURIComponent(gk));
+            pushAllocationToCloud(activity);
+        }
+
+        function setInUnitAuthorCountOverride(activity, value) {
+            var A = parseInt(activity.totalAuthors) || 1;
+            var gk = getActivityGroupKey(activity);
+            if (value === undefined || value === null || String(value).trim() === '') {
+                if (!cloudConfig.allocationByGroup) cloudConfig.allocationByGroup = {};
+                var emptySlot = Object.assign({}, cloudConfig.allocationByGroup[gk] || {});
+                emptySlot.inUnitAuthorCountOverride = null;
+                cloudConfig.allocationByGroup[gk] = emptySlot;
+                localStorage.removeItem(LS_ADMIN_PREFIX + 'heff_inunit:' + encodeURIComponent(gk));
+                pushAllocationToCloud(activity);
+                return;
+            }
+            var n = parseInt(value, 10);
+            if (isNaN(n)) n = A;
+            n = Math.max(0, Math.min(A, n));
+            if (!cloudConfig.allocationByGroup) cloudConfig.allocationByGroup = {};
+            var slot = Object.assign({}, cloudConfig.allocationByGroup[gk] || {});
+            slot.inUnitAuthorCountOverride = n;
+            cloudConfig.allocationByGroup[gk] = slot;
+            localStorage.setItem(LS_ADMIN_PREFIX + 'heff_inunit:' + encodeURIComponent(gk), String(n));
+            pushAllocationToCloud(activity);
+        }
+
+        function getHeffValidation(activity) {
+            var A = parseInt(activity.totalAuthors) || 1;
+            var primaryOutside = getPrimaryOutsideForActivity(activity);
+            if (!primaryOutside) return { ok: true, message: '' };
+            var gk = getActivityGroupKey(activity);
+            var slot = cloudConfig.allocationByGroup && cloudConfig.allocationByGroup[gk];
+            var rawSlot = slot ? slot.inUnitAuthorCountOverride : undefined;
+            var rawLs = localStorage.getItem(LS_ADMIN_PREFIX + 'heff_inunit:' + encodeURIComponent(gk));
+            var raw = rawSlot;
+            if (raw === undefined || raw === null || raw === '') raw = rawLs;
+            if (raw === undefined || raw === null || raw === '') {
+                return { ok: false, message: 'Thiếu dữ liệu: đã tick tác giả chính ngoài Viện nhưng chưa nhập số tác giả thuộc Viện.' };
+            }
+            var n = parseInt(raw, 10);
+            if (isNaN(n)) return { ok: false, message: 'Số tác giả thuộc Viện không hợp lệ.' };
+            if (n > A) return { ok: false, message: 'Số tác giả thuộc Viện không được lớn hơn tổng số tác giả (' + A + ').' };
+            if (n < 0) return { ok: false, message: 'Số tác giả thuộc Viện không được âm.' };
+            return { ok: true, message: '' };
+        }
+
+        function getManualAllocatedHoursForCurrentUser(activity) {
+            if (!lastSearchResult || !lastSearchResult.name) return 0;
+            var norm = normalizeName(lastSearchResult.name);
+            var v = getManualAllocatedHoursByNorm(activity, norm);
+            return (v === null || v === undefined) ? 0 : v;
+        }
+
+        function sumManualAllocatedHoursForGroup(activity, allActivities) {
+            var names = getAuthorNamesForActivity(activity, allActivities || [], buildAuthorMap(allActivities || []));
+            var total = 0;
+            names.forEach(function(nm) {
+                var v = getManualAllocatedHoursByNorm(activity, normalizeName(nm));
+                if (v !== null && v !== undefined) total += v;
+            });
+            return total;
+        }
+
+        function isAgreementBlockedForCurrentUser(activity) {
+            if (!lastSearchResult || !lastSearchResult.name) return false;
+            if (getAllocationMode(activity) !== 'agreement') return false;
+            if (getAgreementStrategy(activity) === 'manual_split') return false;
+            var assignee = getAllocationAssignee(activity);
+            if (!assignee) return false;
+            return assignee !== normalizeName(lastSearchResult.name);
+        }
+
+        function isActivityMarkedInvalid(activity) {
+            var gk = getActivityGroupKey(activity);
+            if (cloudConfig.invalidByGroup && Object.prototype.hasOwnProperty.call(cloudConfig.invalidByGroup, gk)) {
+                return !!cloudConfig.invalidByGroup[gk];
+            }
+            return localStorage.getItem(lsKeyActivityInvalid(activity)) === 'true';
+        }
+
+        function isAuthorMarkedNoPoints(activity) {
+            var rk = getAuthorRowStorageKey(activity);
+            var slot = cloudConfig.authorByRow && cloudConfig.authorByRow[rk];
+            if (slot && slot.authorNoPoints !== undefined && slot.authorNoPoints !== null) {
+                return !!slot.authorNoPoints;
+            }
+            return localStorage.getItem(lsKeyAuthorNoPoints(activity)) === 'true';
+        }
+
+        function setActivityInvalid(activity, value) {
+            var k = lsKeyActivityInvalid(activity);
+            if (value) localStorage.setItem(k, 'true');
+            else localStorage.removeItem(k);
+            var gk = getActivityGroupKey(activity);
+            if (!cloudConfig.invalidByGroup) cloudConfig.invalidByGroup = {};
+            if (value) cloudConfig.invalidByGroup[gk] = true;
+            else delete cloudConfig.invalidByGroup[gk];
+            pushInvalidToCloud(activity, value);
+        }
+
+        function setAuthorNoPoints(activity, value) {
+            var k = lsKeyAuthorNoPoints(activity);
+            if (value) localStorage.setItem(k, 'true');
+            else localStorage.removeItem(k);
+            var rk = getAuthorRowStorageKey(activity);
+            if (!cloudConfig.authorByRow) cloudConfig.authorByRow = {};
+            var slot = Object.assign({}, cloudConfig.authorByRow[rk] || {});
+            slot.authorNoPoints = !!value;
+            if (slot.hasConsensus === undefined) slot.hasConsensus = isConsensusMarked(activity);
+            cloudConfig.authorByRow[rk] = slot;
+        }
+
+        function lsKeyKOverride(activity) {
+            return LS_ADMIN_PREFIX + 'kval:' + encodeURIComponent(getAuthorRowStorageKey(activity));
+        }
+
+        function lsKeyConsensus(activity) {
+            return LS_ADMIN_PREFIX + 'cons:' + encodeURIComponent(getAuthorRowStorageKey(activity));
+        }
+
+        function isConsensusMarked(activity) {
+            var rk = getAuthorRowStorageKey(activity);
+            var slot = cloudConfig.authorByRow && cloudConfig.authorByRow[rk];
+            if (slot && slot.hasConsensus !== undefined && slot.hasConsensus !== null) {
+                return !!slot.hasConsensus;
+            }
+            return localStorage.getItem(lsKeyConsensus(activity)) === 'true';
+        }
+
+        function setConsensus(activity, value) {
+            var rk = getAuthorRowStorageKey(activity);
+            if (value) localStorage.setItem(lsKeyConsensus(activity), 'true');
+            else localStorage.removeItem(lsKeyConsensus(activity));
+            if (!cloudConfig.authorByRow) cloudConfig.authorByRow = {};
+            var slot = Object.assign({}, cloudConfig.authorByRow[rk] || {});
+            slot.hasConsensus = !!value;
+            cloudConfig.authorByRow[rk] = slot;
+        }
+
+        function getEffectiveKForUi(activity, idx, allActivities) {
+            var raw = kOverridesByIndex[idx];
+            return getKForActivity(activity, allActivities || [], raw);
+        }
+
+        function consensusUiEnabled(activity, idx, allActivities) {
+            var A = parseInt(activity.totalAuthors) || 1;
+            if (!isAdminSession() || !isEffectivePrimary(activity) || A <= 1) return false;
+            return getEffectiveKForUi(activity, idx, allActivities) !== 2;
+        }
+
+        function getKOverrideFromStorage(activity) {
+            var v = localStorage.getItem(lsKeyKOverride(activity));
+            if (v === null || v === '') return undefined;
+            var n = parseInt(v, 10);
+            if (n >= 1 && n <= 4) return n;
+            return undefined;
+        }
+
+        function getKOverrideForActivity(activity) {
+            var rk = getAuthorRowStorageKey(activity);
+            var slot = cloudConfig.authorByRow && cloudConfig.authorByRow[rk];
+            if (slot && slot.kOverride !== undefined && slot.kOverride !== null && slot.kOverride !== '') {
+                var cn = parseInt(slot.kOverride, 10);
+                if (!isNaN(cn) && cn >= 1 && cn <= 4) return cn;
+            }
+            return getKOverrideFromStorage(activity);
+        }
+
+        function setKOverrideInStorage(activity, value) {
+            var k = lsKeyKOverride(activity);
+            if (value === undefined || value === null) localStorage.removeItem(k);
+            else localStorage.setItem(k, String(value));
+            var rk = getAuthorRowStorageKey(activity);
+            if (!cloudConfig.authorByRow) cloudConfig.authorByRow = {};
+            var slot = Object.assign({}, cloudConfig.authorByRow[rk] || {});
+            slot.kOverride = (value !== undefined && value !== null) ? value : null;
+            if (slot.authorNoPoints === undefined) slot.authorNoPoints = isAuthorMarkedNoPoints(activity);
+            if (slot.hasConsensus === undefined) slot.hasConsensus = isConsensusMarked(activity);
+            cloudConfig.authorByRow[rk] = slot;
+        }
+
+        function mirrorCloudToLocalStorage() {
+            var gk;
+            for (gk in cloudConfig.invalidByGroup) {
+                if (cloudConfig.invalidByGroup[gk]) localStorage.setItem(LS_ADMIN_PREFIX + 'inv:' + encodeURIComponent(gk), 'true');
+                else localStorage.removeItem(LS_ADMIN_PREFIX + 'inv:' + encodeURIComponent(gk));
+            }
+            var rk;
+            for (rk in cloudConfig.authorByRow) {
+                var slot = cloudConfig.authorByRow[rk];
+                if (slot.authorNoPoints) localStorage.setItem(LS_ADMIN_PREFIX + 'nap:' + encodeURIComponent(rk), 'true');
+                else localStorage.removeItem(LS_ADMIN_PREFIX + 'nap:' + encodeURIComponent(rk));
+                if (slot.kOverride >= 1 && slot.kOverride <= 4) {
+                    localStorage.setItem(LS_ADMIN_PREFIX + 'kval:' + encodeURIComponent(rk), String(slot.kOverride));
+                } else {
+                    localStorage.removeItem(LS_ADMIN_PREFIX + 'kval:' + encodeURIComponent(rk));
+                }
+                if (slot.hasConsensus) localStorage.setItem(LS_ADMIN_PREFIX + 'cons:' + encodeURIComponent(rk), 'true');
+                else localStorage.removeItem(LS_ADMIN_PREFIX + 'cons:' + encodeURIComponent(rk));
+                if (slot.manualAllocHours !== undefined && slot.manualAllocHours !== null && slot.manualAllocHours !== '') {
+                    localStorage.setItem(LS_ADMIN_PREFIX + 'allochours:' + encodeURIComponent(rk), String(slot.manualAllocHours));
+                } else {
+                    localStorage.removeItem(LS_ADMIN_PREFIX + 'allochours:' + encodeURIComponent(rk));
+                }
+            }
+            var agk;
+            for (agk in cloudConfig.allocationByGroup) {
+                var aslot = cloudConfig.allocationByGroup[agk] || {};
+                var allocModeKey = LS_ADMIN_PREFIX + 'allocmode:' + encodeURIComponent(agk);
+                var allocAssigneeKey = LS_ADMIN_PREFIX + 'allocassignee:' + encodeURIComponent(agk);
+                var allocStrategyKey = LS_ADMIN_PREFIX + 'allocstrategy:' + encodeURIComponent(agk);
+                if (aslot.mode === 'agreement') localStorage.setItem(allocModeKey, 'agreement');
+                else localStorage.removeItem(allocModeKey);
+                if (aslot.assignee) localStorage.setItem(allocAssigneeKey, aslot.assignee);
+                else localStorage.removeItem(allocAssigneeKey);
+                if (aslot.strategy === 'manual_split') localStorage.setItem(allocStrategyKey, 'manual_split');
+                else localStorage.removeItem(allocStrategyKey);
+                if (aslot.locked) localStorage.setItem(LS_ADMIN_PREFIX + 'alloclocked:' + encodeURIComponent(agk), 'true');
+                else localStorage.removeItem(LS_ADMIN_PREFIX + 'alloclocked:' + encodeURIComponent(agk));
+                if (aslot.projectRegisteredOverride !== undefined && aslot.projectRegisteredOverride !== null) {
+                    localStorage.setItem(LS_ADMIN_PREFIX + 'projreg:' + encodeURIComponent(agk), aslot.projectRegisteredOverride ? 'true' : 'false');
+                }
+                if (aslot.primaryOutsideOverride !== undefined && aslot.primaryOutsideOverride !== null) {
+                    localStorage.setItem(LS_ADMIN_PREFIX + 'heff_out:' + encodeURIComponent(agk), aslot.primaryOutsideOverride ? 'true' : 'false');
+                }
+                if (aslot.inUnitAuthorCountOverride !== undefined && aslot.inUnitAuthorCountOverride !== null && aslot.inUnitAuthorCountOverride !== '') {
+                    localStorage.setItem(LS_ADMIN_PREFIX + 'heff_inunit:' + encodeURIComponent(agk), String(aslot.inUnitAuthorCountOverride));
+                }
+            }
+        }
+
+        function isSupabaseKpiConfigReady() {
+            return KPI_CONFIG_SUPABASE_ENABLED && !!SUPABASE_URL && !!SUPABASE_ANON_KEY;
+        }
+
+        function isSupabaseDataReady() {
+            return SUPABASE_DATA_ENABLED && !!SUPABASE_URL && !!SUPABASE_ANON_KEY;
+        }
+
+        function getSupabaseRestBase() {
+            return SUPABASE_URL.replace(/\/+$/, '') + '/rest/v1/' + SUPABASE_KPI_CONFIG_TABLE;
+        }
+
+        function getSupabaseRestTableUrl(tableName) {
+            return SUPABASE_URL.replace(/\/+$/, '') + '/rest/v1/' + tableName;
+        }
+
+        function supabaseRequest(url, options) {
+            var headers = Object.assign({
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: 'Bearer ' + SUPABASE_ANON_KEY
+            }, (options && options.headers) || {});
+            return fetch(url, Object.assign({}, options || {}, { headers: headers }));
+        }
+
+        function mapSupabaseRowsToCloudConfig(rows) {
+            var out = { invalidByGroup: {}, authorByRow: {}, allocationByGroup: {} };
+            (rows || []).forEach(function(row) {
+                var gk = (row.group_key || '').toString();
+                var rk = (row.author_row_key || '').toString();
+                if (gk && row.invalid_activity === true) out.invalidByGroup[gk] = true;
+                if (gk) {
+                    out.allocationByGroup[gk] = {
+                        mode: row.allocation_mode === 'agreement' ? 'agreement' : 'auto',
+                        assignee: (row.allocation_assignee || '').toString(),
+                        strategy: row.allocation_strategy === 'manual_split' ? 'manual_split' : 'single_assignee',
+                        locked: row.allocation_locked === true,
+                        projectRegisteredOverride: row.project_registered_override === true,
+                        isProjectActivityOverride: row.is_project_activity_override === true,
+                        projectTotalHoursOverride: row.project_total_hours_override,
+                        projectStartYmOverride: row.project_start_ym_override,
+                        projectEndYmOverride: row.project_end_ym_override,
+                        primaryOutsideOverride: row.primary_outside_override,
+                        inUnitAuthorCountOverride: row.in_unit_author_count_override
+                    };
+                }
+                if (rk) {
+                    out.authorByRow[rk] = {
+                        authorNoPoints: row.author_no_points === true,
+                        kOverride: (row.k_override !== null && row.k_override !== undefined && row.k_override !== '') ? parseInt(row.k_override, 10) : null,
+                        hasConsensus: row.has_consensus === true,
+                        manualAllocHours: (row.manual_alloc_hours !== null && row.manual_alloc_hours !== undefined && row.manual_alloc_hours !== '') ? parseInt(row.manual_alloc_hours, 10) : null
+                    };
+                }
+            });
+            return out;
+        }
+
+        function loadAvailableYearsFromSupabase() {
+            if (!isSupabaseDataReady()) return Promise.resolve(null);
+            var url = getSupabaseRestTableUrl(SUPABASE_ACTIVITIES_TABLE) + '?select=year&order=year.desc';
+            return supabaseRequest(url, { method: 'GET' })
+                .then(function(r) {
+                    if (!r.ok) throw new Error('supabase_years_failed_' + r.status);
+                    return r.json();
+                })
+                .then(function(rows) {
+                    var uniqueYears = {};
+                    (rows || []).forEach(function(row) {
+                        var y = String(row.year || '').trim();
+                        if (y) uniqueYears[y] = true;
+                    });
+                    return Object.keys(uniqueYears).sort(function(a, b) { return Number(b) - Number(a); });
+                });
+        }
+
+        function loadActivitiesFromSupabase(year) {
+            if (!isSupabaseDataReady()) return Promise.reject(new Error('supabase_data_not_enabled'));
+            var y = encodeURIComponent(String(year || '').trim());
+            var activitiesUrl = getSupabaseRestTableUrl(SUPABASE_ACTIVITIES_TABLE)
+                + '?year=eq.' + y
+                + '&select=id,year,stt,activity_type,ranking,title,journal,total_authors,h_max,primary_outside_unit,in_unit_author_count'
+                + '&order=stt.asc,id.asc';
+            return supabaseRequest(activitiesUrl, { method: 'GET' })
+                .then(function(r) {
+                    if (!r.ok) throw new Error('supabase_activities_failed_' + r.status);
+                    return r.json();
+                })
+                .then(function(baseRows) {
+                    if (!baseRows || baseRows.length === 0) return [];
+                    var ids = baseRows.map(function(row) { return row.id; }).filter(function(id) { return !!id; });
+                    if (ids.length === 0) return [];
+                    var idsParam = ids.map(function(id) { return '"' + id + '"'; }).join(',');
+                    var authorsUrl = getSupabaseRestTableUrl(SUPABASE_ACTIVITY_AUTHORS_TABLE)
+                        + '?select=activity_id,author_name,role,author_order&activity_id=in.(' + encodeURIComponent(idsParam) + ')'
+                        + '&order=activity_id.asc,author_order.asc,id.asc';
+                    return supabaseRequest(authorsUrl, { method: 'GET' })
+                        .then(function(r2) {
+                            if (!r2.ok) throw new Error('supabase_authors_failed_' + r2.status);
+                            return r2.json();
+                        })
+                        .then(function(authorRows) {
+                            var byActivity = {};
+                            (authorRows || []).forEach(function(aRow) {
+                                var aid = String(aRow.activity_id || '');
+                                if (!aid) return;
+                                if (!byActivity[aid]) byActivity[aid] = [];
+                                byActivity[aid].push(aRow);
+                            });
+                            var out = [];
+                            baseRows.forEach(function(row) {
+                                var aid = String(row.id || '');
+                                var A = toPositiveIntOrDefault(row.total_authors, 1);
+                                var parsedInUnitCount = toNonNegativeIntOrNaN(row.in_unit_author_count);
+                                var inUnitCount = isNaN(parsedInUnitCount) ? A : Math.max(0, Math.min(A, parsedInUnitCount));
+                                var list = byActivity[aid] || [];
+                                if (list.length === 0) {
+                                    out.push({
+                                        year: row.year || '',
+                                        stt: row.stt || '',
+                                        activityType: row.activity_type || '',
+                                        ranking: row.ranking || '',
+                                        title: row.title || '',
+                                        journal: row.journal || '',
+                                        authorName: '',
+                                        role: 'coauthor',
+                                        totalAuthors: A,
+                                        H: parseInt(row.h_max, 10) || 600,
+                                        score: 0,
+                                        primaryOutsideUnit: !!row.primary_outside_unit,
+                                        inUnitAuthorCount: inUnitCount
+                                    });
+                                    return;
+                                }
+                                list.forEach(function(aRow) {
+                                    out.push({
+                                        year: row.year || '',
+                                        stt: row.stt || '',
+                                        activityType: row.activity_type || '',
+                                        ranking: row.ranking || '',
+                                        title: row.title || '',
+                                        journal: row.journal || '',
+                                        authorName: aRow.author_name || '',
+                                        role: aRow.role || 'coauthor',
+                                        totalAuthors: A,
+                                        H: parseInt(row.h_max, 10) || 600,
+                                        score: 0,
+                                        primaryOutsideUnit: !!row.primary_outside_unit,
+                                        inUnitAuthorCount: inUnitCount
+                                    });
+                                });
+                            });
+                            return out;
+                        });
+                });
+        }
+
+        function fetchCloudConfigFromSupabase(year) {
+            if (!isSupabaseKpiConfigReady() || !year) return Promise.resolve(null);
+            var y = encodeURIComponent(String(year));
+            var url = getSupabaseRestBase()
+                + '?year=eq.' + y
+                + '&select=group_key,author_row_key,invalid_activity,author_no_points,k_override,has_consensus,allocation_mode,allocation_assignee,allocation_strategy,allocation_locked,project_registered_override,is_project_activity_override,project_total_hours_override,project_start_ym_override,project_end_ym_override,primary_outside_override,in_unit_author_count_override,manual_alloc_hours';
+            return supabaseRequest(url, { method: 'GET' })
+                .then(function(r) {
+                    if (!r.ok) throw new Error('supabase_get_failed_' + r.status);
+                    return r.json();
+                })
+                .then(function(rows) {
+                    var mapped = mapSupabaseRowsToCloudConfig(rows);
+                    return { ok: true, invalidByGroup: mapped.invalidByGroup, authorByRow: mapped.authorByRow, allocationByGroup: mapped.allocationByGroup };
+                });
+        }
+
+        function pushInvalidToSupabase(year, groupKey, value) {
+            if (!isSupabaseKpiConfigReady()) return Promise.resolve(false);
+            var payload = [{
+                year: String(year || ''),
+                group_key: groupKey || '',
+                invalid_activity: !!value,
+                author_row_key: null
+            }];
+            var url = getSupabaseRestBase() + '?on_conflict=year,group_key,author_row_key';
+            return supabaseRequest(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Prefer: 'resolution=merge-duplicates,return=minimal'
+                },
+                body: JSON.stringify(payload)
+            }).then(function(r) { return r.ok; }).catch(function() { return false; });
+        }
+
+        function pushAuthorRowToSupabase(year, authorRowKey, authorNoPoints, kOverride, hasConsensus, manualAllocHours) {
+            if (!isSupabaseKpiConfigReady()) return Promise.resolve(false);
+            var payload = [{
+                year: String(year || ''),
+                author_row_key: authorRowKey || '',
+                author_no_points: !!authorNoPoints,
+                k_override: (kOverride !== undefined && kOverride !== null) ? kOverride : null,
+                has_consensus: !!hasConsensus,
+                manual_alloc_hours: (manualAllocHours !== undefined && manualAllocHours !== null && manualAllocHours !== '') ? parseInt(manualAllocHours, 10) : null
+            }];
+            var url = getSupabaseRestBase() + '?on_conflict=year,author_row_key';
+            return supabaseRequest(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Prefer: 'resolution=merge-duplicates,return=minimal'
+                },
+                body: JSON.stringify(payload)
+            }).then(function(r) { return r.ok; }).catch(function() { return false; });
+        }
+
+        function pushAllocationToSupabase(year, groupKey, mode, assignee, strategy, locked, projectRegisteredOverride, isProjectActivityOverride, projectTotalHoursOverride, projectStartYmOverride, projectEndYmOverride, primaryOutsideOverride, inUnitAuthorCountOverride) {
+            if (!isSupabaseKpiConfigReady()) return Promise.resolve(false);
+            var payload = [{
+                year: String(year || ''),
+                group_key: groupKey || '',
+                author_row_key: null,
+                allocation_mode: mode === 'agreement' ? 'agreement' : 'auto',
+                allocation_assignee: assignee || null,
+                allocation_strategy: strategy === 'manual_split' ? 'manual_split' : 'single_assignee',
+                allocation_locked: !!locked,
+                project_registered_override: !!projectRegisteredOverride,
+                is_project_activity_override: !!isProjectActivityOverride,
+                project_total_hours_override: (projectTotalHoursOverride !== undefined && projectTotalHoursOverride !== null && projectTotalHoursOverride !== '') ? parseInt(projectTotalHoursOverride, 10) : null,
+                project_start_ym_override: projectStartYmOverride || null,
+                project_end_ym_override: projectEndYmOverride || null,
+                primary_outside_override: (primaryOutsideOverride !== undefined ? !!primaryOutsideOverride : null),
+                in_unit_author_count_override: (inUnitAuthorCountOverride !== undefined && inUnitAuthorCountOverride !== null && inUnitAuthorCountOverride !== '') ? parseInt(inUnitAuthorCountOverride, 10) : null
+            }];
+            var url = getSupabaseRestBase() + '?on_conflict=year,group_key,author_row_key';
+            return supabaseRequest(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Prefer: 'resolution=merge-duplicates,return=minimal'
+                },
+                body: JSON.stringify(payload)
+            }).then(function(r) { return r.ok; }).catch(function() { return false; });
+        }
+
+        function pushAllocationToCloud(activity) {
+            if (!KPI_CONFIG_CLOUD_ENABLED) return;
+            var year = ((activity.year || (lastSearchResult && lastSearchResult.year)) || '').toString();
+            var gk = getActivityGroupKey(activity);
+            var slot = cloudConfig.allocationByGroup && cloudConfig.allocationByGroup[gk];
+            pushAllocationToSupabase(
+                year,
+                gk,
+                getAllocationMode(activity),
+                getAllocationAssignee(activity),
+                getAgreementStrategy(activity),
+                isAllocationLocked(activity),
+                slot ? slot.projectRegisteredOverride : false,
+                isDeTaiKhCnActivity(activity) ? !!(slot && slot.isProjectActivityOverride) : false,
+                null,
+                slot ? slot.projectStartYmOverride : null,
+                slot ? slot.projectEndYmOverride : null,
+                slot ? slot.primaryOutsideOverride : undefined,
+                slot ? slot.inUnitAuthorCountOverride : undefined
+            ).then(function() {});
+        }
+
+        function pushSnapshotToSupabase(snapshot) {
+            if (!isSupabaseKpiConfigReady()) return Promise.resolve(false);
+            var url = getSupabaseRestTableUrl(SUPABASE_SNAPSHOTS_TABLE) + '?on_conflict=id';
+            var payload = [{
+                id: snapshot.id,
+                created_at: snapshot.createdAt,
+                year: snapshot.year || null,
+                researcher_name: snapshot.name || null,
+                activity_count: snapshot.activityCount || 0,
+                total_score: snapshot.totalScore || 0,
+                payload: snapshot.payload || {}
+            }];
+            return supabaseRequest(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Prefer: 'resolution=merge-duplicates,return=minimal'
+                },
+                body: JSON.stringify(payload)
+            }).then(function(r) { return r.ok; }).catch(function() { return false; });
+        }
+
+        function pushInvalidToCloud(activity, value) {
+            if (!KPI_CONFIG_CLOUD_ENABLED) return;
+            var year = ((activity.year || (lastSearchResult && lastSearchResult.year)) || '').toString();
+            var groupKey = getActivityGroupKey(activity);
+            pushInvalidToSupabase(year, groupKey, value).then(function(ok) {
+                if (ok) return;
+                var url = SCRIPT_URL + '?action=setInvalid&year=' + encodeURIComponent(year)
+                + '&groupKey=' + encodeURIComponent(getActivityGroupKey(activity))
+                + '&invalid=' + (value ? 'true' : 'false');
+                if (KPI_CONFIG_TOKEN) url += '&token=' + encodeURIComponent(KPI_CONFIG_TOKEN);
+                fetch(url).catch(function() {});
+            });
+        }
+
+        function pushAuthorRowToCloudForIndex(idx) {
+            if (!KPI_CONFIG_CLOUD_ENABLED || !lastSearchResult || !lastSearchResult.activities[idx]) return;
+            var a = lastSearchResult.activities[idx];
+            var year = (lastSearchResult.year || '').toString();
+            var authorRowKey = getAuthorRowStorageKey(a);
+            var kv = kOverridesByIndex[idx];
+            var slot = cloudConfig.authorByRow && cloudConfig.authorByRow[authorRowKey];
+            var mh = slot ? slot.manualAllocHours : null;
+            pushAuthorRowToSupabase(year, authorRowKey, isAuthorMarkedNoPoints(a), kv, isConsensusMarked(a), mh).then(function(ok) {
+                if (ok) return;
+                var url = SCRIPT_URL + '?action=setAuthorRow&year=' + encodeURIComponent(year)
+                + '&authorRowKey=' + encodeURIComponent(getAuthorRowStorageKey(a))
+                + '&authorNoPoints=' + (isAuthorMarkedNoPoints(a) ? 'true' : 'false');
+                if (kv !== undefined && kv !== null) url += '&kOverride=' + kv;
+                else url += '&kOverride=';
+                url += '&hasConsensus=' + (isConsensusMarked(a) ? 'true' : 'false');
+                if (KPI_CONFIG_TOKEN) url += '&token=' + encodeURIComponent(KPI_CONFIG_TOKEN);
+                fetch(url).catch(function() {});
+            });
+        }
+
+        function pushAuthorRowToCloudByAuthorKey(year, authorRowKey) {
+            if (!KPI_CONFIG_CLOUD_ENABLED || !authorRowKey) return;
+            var slot = (cloudConfig.authorByRow && cloudConfig.authorByRow[authorRowKey]) || {};
+            pushAuthorRowToSupabase(
+                year || '',
+                authorRowKey,
+                !!slot.authorNoPoints,
+                (slot.kOverride !== undefined ? slot.kOverride : null),
+                !!slot.hasConsensus,
+                (slot.manualAllocHours !== undefined ? slot.manualAllocHours : null)
+            ).then(function() {});
+        }
+
+        function fetchCloudConfigAndMerge(year) {
+            if (!KPI_CONFIG_CLOUD_ENABLED || !year) return;
+            fetchCloudConfigFromSupabase(year)
+                .catch(function() { return null; })
+                .then(function(data) {
+                    if (data && data.ok) return data;
+                    var url = SCRIPT_URL + '?action=getKpiConfig&year=' + encodeURIComponent(year);
+                    if (KPI_CONFIG_TOKEN) url += '&token=' + encodeURIComponent(KPI_CONFIG_TOKEN);
+                    return fetch(url).then(function(r) { return r.json(); });
+                })
+                .then(function(data) {
+                    if (!data || !data.ok) return;
+                    cloudConfig.invalidByGroup = data.invalidByGroup || {};
+                    cloudConfig.authorByRow = data.authorByRow || {};
+                    cloudConfig.allocationByGroup = data.allocationByGroup || {};
+                    mirrorCloudToLocalStorage();
+                    if (!lastSearchResult || String(lastSearchResult.year) !== String(year)) return;
+                    lastSearchResult.activities.forEach(function(a, idx) {
+                        var sk = getKOverrideForActivity(a);
+                        if (sk !== undefined) kOverridesByIndex[idx] = sk;
+                        else delete kOverridesByIndex[idx];
+                    });
+                    if (lastSearchResult) lastSearchResult.kOverridesByIndex = kOverridesByIndex;
+                    refreshAllActivityCardsFromCache();
+                })
+                .catch(function() {});
+        }
+
+        function refreshAllActivityCardsFromCache() {
+            if (!lastSearchResult || !lastSearchResult.activities) return;
+            lastSearchResult.activities.forEach(function(a, i) {
+                refreshActivityCardKUI(i, true);
+            });
+            updateTotalKpiScoreFromComputed();
+        }
+
+        function computeFinalScoreHours(activity, allActivities, kOverride) {
+            if (isActivityMarkedInvalid(activity)) return 0;
+            if (isAuthorMarkedNoPoints(activity)) return 0;
+            if (getAllocationMode(activity) === 'agreement') {
+                if (getAgreementStrategy(activity) === 'manual_split') {
+                    return getManualAllocatedHoursForCurrentUser(activity);
+                }
+                var assignee = getAllocationAssignee(activity);
+                if (!assignee || !lastSearchResult || !lastSearchResult.name) return 0;
+                if (assignee !== normalizeName(lastSearchResult.name)) return 0;
+                return getActivityPoolHours(activity);
+            }
+            return computeScoreHours(activity, allActivities, kOverride);
+        }
+
+        function getAdminFormulaBannerHtml(activity) {
+            if (isActivityMarkedInvalid(activity)) {
+                return '<div class="admin-flag-msg invalid"><strong>Hoạt động không hợp lệ</strong> — không cộng điểm vào KPI.</div>';
+            }
+            if (isAuthorMarkedNoPoints(activity)) {
+                return '<div class="admin-flag-msg no-points"><strong>Tác giả không nhận điểm</strong> — không cộng điểm hoạt động này cho tác giả này.</div>';
+            }
+            if (getAllocationMode(activity) === 'agreement') {
+                var strategy = getAgreementStrategy(activity);
+                if (strategy === 'manual_split') {
+                    var pool = getActivityPoolHours(activity);
+                    var allocated = sumManualAllocatedHoursForGroup(activity, lastSearchResult ? lastSearchResult.allActivities : []);
+                    var mine = getManualAllocatedHoursForCurrentUser(activity);
+                    return '<div class="admin-flag-msg no-points"><strong>Cách 1 (chia tay):</strong> đã phân bổ ' + allocated + '/' + pool + ' giờ. Tác giả đang xét nhận <strong>' + mine + ' giờ</strong>.</div>';
+                }
+                var assigneeNorm = getAllocationAssignee(activity);
+                if (assigneeNorm && lastSearchResult && normalizeName(lastSearchResult.name) !== assigneeNorm) {
+                    return '<div class="admin-flag-msg no-points"><strong>Cách 1 (thỏa thuận):</strong> công trình đã quy toàn bộ điểm cho tác giả khác, nên hồ sơ này không cộng điểm.</div>';
+                }
+                if (assigneeNorm && lastSearchResult && normalizeName(lastSearchResult.name) === assigneeNorm) {
+                    return '<div class="admin-flag-msg no-points"><strong>Cách 1 (thỏa thuận):</strong> công trình này quy toàn bộ <strong>' + getActivityPoolHours(activity) + ' giờ</strong> cho tác giả đang xét.</div>';
+                }
+                return '<div class="admin-flag-msg no-points"><strong>Cách 1 (thỏa thuận):</strong> chưa quy điểm cho tác giả nào, hiện tạm không cộng điểm.</div>';
+            }
+            return '';
+        }
+
+        function getScoreFormulaTextForExport(activity, allActivities, kOverride) {
+            if (getAllocationMode(activity) === 'agreement') {
+                if (getAgreementStrategy(activity) === 'manual_split') {
+                    var pool = getActivityPoolHours(activity);
+                    var alloc = sumManualAllocatedHoursForGroup(activity, allActivities || []);
+                    var mineM = getManualAllocatedHoursForCurrentUser(activity);
+                    return 'Cách 1 (chia tay): tác giả đang xét nhận ' + mineM + ' giờ; tổng đã phân bổ ' + alloc + '/' + pool + ' giờ.';
+                }
+                var assignee = getAllocationAssignee(activity);
+                var current = (lastSearchResult && lastSearchResult.name) ? normalizeName(lastSearchResult.name) : '';
+                if (!assignee) return 'Cách 1 (thỏa thuận): chưa quy điểm cho tác giả nào.';
+                if (assignee === current) {
+                    return 'Cách 1 (thỏa thuận): quy toàn bộ điểm công trình cho tác giả đang xét = ' + getActivityPoolHours(activity) + ' giờ.';
+                }
+                return 'Cách 1 (thỏa thuận): công trình đã quy điểm cho tác giả khác, hồ sơ này = 0 giờ.';
+            }
+            var base = getScoreFormulaText(activity, allActivities, kOverride);
+            if (isActivityMarkedInvalid(activity)) {
+                return 'Không cộng điểm (hoạt động không hợp lệ).\nTham chiếu: ' + base;
+            }
+            if (isAuthorMarkedNoPoints(activity)) {
+                return 'Không cộng điểm (tác giả không nhận điểm).\nTham chiếu: ' + base;
+            }
+            return base;
+        }
+
         function loadAvailableYears() {
             console.log('Loading available years...');
-            fetch(SCRIPT_URL)
-                .then(function(response) { return response.json(); })
+            loadAvailableYearsFromSupabase()
+                .catch(function() { return null; })
+                .then(function(years) {
+                    if (years && years.length) return { availableYears: years };
+                    return fetch(SCRIPT_URL).then(function(response) { return response.json(); });
+                })
                 .then(function(data) {
                     availableYears = data.availableYears || [];
                     console.log('Available years:', availableYears);
@@ -130,6 +1238,32 @@
             return name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/[^a-z0-9]/g, '').trim();
         }
 
+        function normalizeHeaderKey(text) {
+            return (text || '').toString().toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/đ/g, 'd')
+                .replace(/[^a-z0-9]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function parseBooleanFlag(value) {
+            var raw = (value || '').toString().trim().toLowerCase();
+            return raw === '1' || raw === 'x' || raw === 'yes' || raw === 'y' || raw === 'true' || raw === 'co' || raw === 'có';
+        }
+
+        function toPositiveIntOrDefault(value, fallbackValue) {
+            var num = parseInt(value, 10);
+            if (isNaN(num) || num <= 0) return fallbackValue;
+            return num;
+        }
+
+        function toNonNegativeIntOrNaN(value) {
+            var num = parseInt(value, 10);
+            if (isNaN(num) || num < 0) return NaN;
+            return num;
+        }
+
         function isSamePerson(name1, name2) {
             var n1 = normalizeName(name1);
             var n2 = normalizeName(name2);
@@ -146,7 +1280,7 @@
             return false;
         }
         
-        function loadFromGoogleSheets(year) {
+        function loadFromGoogleSheetsOnly(year) {
             console.log('Fetching from:', SCRIPT_URL, 'for year:', year);
             var url = SCRIPT_URL + '?sheet=' + encodeURIComponent(year);
             
@@ -163,22 +1297,52 @@
                     if (rows.length < 2) return [];
                     
                     var activities = [];
+                    var headers = rows[0] || [];
+                    var headerMap = {};
+                    for (var h = 0; h < headers.length; h++) {
+                        var hk = normalizeHeaderKey(headers[h]);
+                        if (hk && headerMap[hk] === undefined) headerMap[hk] = h;
+                    }
+                    function getIndex(candidates, fallbackIndex) {
+                        for (var ci = 0; ci < candidates.length; ci++) {
+                            if (headerMap[candidates[ci]] !== undefined) return headerMap[candidates[ci]];
+                        }
+                        return fallbackIndex;
+                    }
+                    var colYear = getIndex(['nam', 'year'], 0);
+                    var colStt = getIndex(['stt'], 1);
+                    var colActivityType = getIndex(['loai hoat dong', 'nhom hoat dong'], 2);
+                    var colRanking = getIndex(['xep hang', 'quartile', 'ranking'], 3);
+                    var colTitle = getIndex(['ten cong trinh', 'ten cong trinh bai bao sang che de tai nghi', 'ten bai bao', 'title'], 4);
+                    var colJournal = getIndex(['ten tap chi', 'tap chi'], 5);
+                    var colAuthor = getIndex(['tac gia', 'danh sach tac gia', 'authors'], 6);
+                    var colRole = getIndex(['role', 'vai tro'], 7);
+                    var colTotalAuthors = getIndex(['tong tac gia', 'so tac gia'], 8);
+                    var colH = getIndex(['h max', 'hmax', 'gio toi da h max', 'h_max', 'gio toi da'], 9);
+                    var colScore = getIndex(['diem', 'score'], 10);
+                    var colPrimaryOutside = getIndex(['tac gia chinh ngoai vien'], -1);
+                    var colInUnitAuthorCount = getIndex(['so tac gia thuoc vien'], -1);
                     for (var i = 1; i < rows.length; i++) {
                         var row = rows[i];
                         if (!row || row.length < 7) continue;
+                        var parsedA = toPositiveIntOrDefault(row[colTotalAuthors], 1);
+                        var parsedInUnitCount = toNonNegativeIntOrNaN(row[colInUnitAuthorCount]);
+                        var inUnitAuthorCount = isNaN(parsedInUnitCount) ? parsedA : Math.max(0, Math.min(parsedA, parsedInUnitCount));
                         
                         activities.push({
-                            year: row[0] || '',
-                            stt: row[1] || '',
-                            activityType: row[2] || '',
-                            ranking: row[3] || '',
-                            title: row[4] || '',
-                            journal: row[5] || '',
-                            authorName: row[6] || '',
-                            role: row[7] || 'coauthor',
-                            totalAuthors: parseInt(row[8]) || 1,
-                            H: parseInt(row[9]) || 600,
-                            score: parseInt(row[10]) || 0
+                            year: row[colYear] || '',
+                            stt: row[colStt] || '',
+                            activityType: row[colActivityType] || '',
+                            ranking: row[colRanking] || '',
+                            title: row[colTitle] || '',
+                            journal: row[colJournal] || '',
+                            authorName: row[colAuthor] || '',
+                            role: row[colRole] || 'coauthor',
+                            totalAuthors: parsedA,
+                            H: parseInt(row[colH]) || 600,
+                            score: parseInt(row[colScore]) || 0,
+                            primaryOutsideUnit: colPrimaryOutside >= 0 ? parseBooleanFlag(row[colPrimaryOutside]) : false,
+                            inUnitAuthorCount: inUnitAuthorCount
                         });
                     }
                     
@@ -188,6 +1352,18 @@
                 .catch(function(error) {
                     console.error('Load error:', error);
                     throw error;
+                });
+        }
+
+        function loadFromGoogleSheets(year) {
+            return loadActivitiesFromSupabase(year)
+                .then(function(activities) {
+                    if (!activities || activities.length === 0) return loadFromGoogleSheetsOnly(year);
+                    console.log('Loaded activities from Supabase:', activities.length);
+                    return activities;
+                })
+                .catch(function() {
+                    return loadFromGoogleSheetsOnly(year);
                 });
         }
 
@@ -360,17 +1536,14 @@
 
         function getAuthorNamesForActivity(activity, allActivities, authorMap) {
             var authorNames = authorMap[getActivityGroupKey(activity)] || [];
-            if (authorNames.length <= 1) {
-                var fallbackByTitle = (allActivities || []).filter(function(item) {
-                    return normalizeText(item.title) === normalizeText(activity.title) &&
-                           normalizeText(item.year) === normalizeText(activity.year);
-                });
-                authorNames = [];
-                fallbackByTitle.forEach(function(item) {
-                    if (item.authorName && authorNames.indexOf(item.authorName) === -1) {
-                        authorNames.push(item.authorName);
-                    }
-                });
+            // Với các đề tài Nafosted (Đề tài KHCN Nafosted) chỉ hiển thị người đứng tên đề tài,
+            // không gom thêm tên ở các dòng khác của cùng đề tài.
+            var isNafostedProject =
+                normalizeText(activity.ranking || '').indexOf('nafosted') !== -1 ||
+                normalizeText(activity.activityType || '').indexOf('nafosted') !== -1;
+            if (isNafostedProject) {
+                if (activity.authorName) return [activity.authorName];
+                return authorNames.length ? [authorNames[0]] : [];
             }
             if (authorNames.length === 0 && activity.authorName) {
                 authorNames.push(activity.authorName);
@@ -378,22 +1551,238 @@
             return authorNames;
         }
 
-        function getScoreFormulaText(activity) {
-            var H = parseInt(activity.H) || 600;
+        function isPrimaryRole(role) {
+            return role === 'first' || role === 'corresponding' || role === 'last';
+        }
+
+        function isEffectivePrimary(activity) {
             var A = parseInt(activity.totalAuthors) || 1;
-            var K = 1;
-            if (A === 1) {
-                return 'Tác giả duy nhất: ' + H + 'h';
+            if (A === 2) return true;
+            return isPrimaryRole(activity.role);
+        }
+
+        function getPrimaryAuthorCount(activity, allActivities) {
+            var A = parseInt(activity.totalAuthors) || 1;
+            if (A === 2) return 2;
+
+            var grouped = (allActivities || []).filter(function(item) {
+                return getActivityGroupKey(item) === getActivityGroupKey(activity);
+            });
+
+            // Fallback theo tiêu đề + năm nếu dữ liệu nhóm chưa đủ trường.
+            if (grouped.length === 0) {
+                grouped = (allActivities || []).filter(function(item) {
+                    return normalizeText(item.title) === normalizeText(activity.title) &&
+                           normalizeText(item.year) === normalizeText(activity.year);
+                });
             }
-            if (activity.role === 'first' || activity.role === 'corresponding' || activity.role === 'last') {
+
+            var primaryAuthors = [];
+            grouped.forEach(function(item) {
+                if (!isPrimaryRole(item.role)) return;
+                var normalized = normalizeName(item.authorName || '');
+                if (!normalized) return;
+                if (primaryAuthors.indexOf(normalized) === -1) {
+                    primaryAuthors.push(normalized);
+                }
+            });
+
+            return primaryAuthors.length || 1;
+        }
+
+        function getKForActivity(activity, allActivities, kOverride) {
+            if (kOverride >= 1 && kOverride <= 4) return kOverride;
+            return getPrimaryAuthorCount(activity, allActivities);
+        }
+
+        function getEffectiveHours(activity) {
+            var H = parseInt(activity.H) || 600;
+            var projectYearHours = getProjectYearHours(activity);
+            if (projectYearHours !== null) H = projectYearHours;
+            if (!getProjectRuleConfig(activity).isProjectActivity && isProjectRegisteredProduct(activity)) {
+                H = H * (2 / 3);
+            }
+            var A = parseInt(activity.totalAuthors) || 1;
+            if (!getPrimaryOutsideForActivity(activity)) return H;
+            var inUnitCount = getInUnitAuthorCountForActivity(activity);
+            inUnitCount = Math.max(0, Math.min(A, inUnitCount));
+            return H * (inUnitCount / A);
+        }
+
+        function getEffectiveHoursNote(activity) {
+            var H = parseInt(activity.H) || 600;
+            var noteParts = [];
+            var projectYearHours = getProjectYearHours(activity);
+            if (projectYearHours !== null) {
+                var cfg = getProjectRuleConfig(activity);
+                var y = parseInt(activity.year || (lastSearchResult && lastSearchResult.year), 10);
+                noteParts.push('Hoạt động đề tài nhiều năm: phân bổ theo tháng chính thức (' + cfg.startYm + ' đến ' + cfg.endYm + ') cho năm ' + y + ' = ' + (Math.round(projectYearHours * 100) / 100) + ' giờ');
+                H = Math.round(projectYearHours * 100) / 100;
+            }
+            if (!getProjectRuleConfig(activity).isProjectActivity && isProjectRegisteredProduct(activity)) {
+                var h23 = Math.round((H * 2 / 3) * 100) / 100;
+                noteParts.push('Áp dụng quy tắc sản phẩm đề tài trong danh mục: H = 2/3 × Hmax = ' + h23 + ' giờ');
+                H = h23;
+            }
+            var A = parseInt(activity.totalAuthors) || 1;
+            if (!getPrimaryOutsideForActivity(activity)) {
+                if (noteParts.length === 0) return '';
+                return '(' + noteParts.join('. ') + '.)';
+            }
+            var inUnitCount = getInUnitAuthorCountForActivity(activity);
+            inUnitCount = Math.max(0, Math.min(A, inUnitCount));
+            var effH = Math.round(getEffectiveHours(activity) * 100) / 100;
+            noteParts.push('Do đánh dấu "Tác giả chính ngoài Viện", áp dụng H hiệu lực: H_eff = ' + H + ' × (' + inUnitCount + '/' + A + ') = ' + effH + ' giờ');
+            return '(' + noteParts.join('. ') + '.)';
+        }
+
+        function formatHours(value) {
+            var num = Number(value);
+            if (!isFinite(num)) return '0';
+            if (Math.abs(num - Math.round(num)) < 0.000001) return String(Math.round(num));
+            return (Math.round(num * 100) / 100).toString();
+        }
+
+        function computeScoreHours(activity, allActivities, kOverride) {
+            var H = getEffectiveHours(activity);
+            var A = parseInt(activity.totalAuthors) || 1;
+            var K = getKForActivity(activity, allActivities, kOverride);
+            if (A === 1) return Math.round(H);
+            if (isEffectivePrimary(activity)) {
                 var part1 = Math.round((H * 1 / 3) * (1 / K));
                 var part2 = Math.round((H * 2 / 3) * (1 / A));
-                return 'Vai trò chính: (1/3 x ' + H + ') x (1/' + K + ') = ' + part1 + 'h; ' +
-                       'Nhóm tác giả: (2/3 x ' + H + ') x (1/' + A + ') = ' + part2 + 'h; ' +
+                return part1 + part2;
+            }
+            return Math.round((H * 2 / 3) * (1 / A));
+        }
+
+        function getScoreFormulaKNote(activity, allActivities, kOverride) {
+            var A = parseInt(activity.totalAuthors) || 1;
+            if (A <= 1 || !isEffectivePrimary(activity)) return '';
+            var K = getKForActivity(activity, allActivities, kOverride);
+            return '(Tính cho ' + K + ' tác giả chính.)';
+        }
+
+        function getConsensusFormulaNote(activity, allActivities, kOverride) {
+            var A = parseInt(activity.totalAuthors) || 1;
+            if (A <= 1 || !isEffectivePrimary(activity)) return '';
+            var K = getKForActivity(activity, allActivities, kOverride);
+            if (K === 2) return '';
+            if (isConsensusMarked(activity)) {
+                return '(Đã có đơn đồng thuận phân chia K.)';
+            }
+            return '(Chưa ghi nhận đơn đồng thuận phân chia K.)';
+        }
+
+        function getScoreFormulaText(activity, allActivities, kOverride) {
+            var H = getEffectiveHours(activity);
+            var HText = formatHours(H);
+            var A = parseInt(activity.totalAuthors) || 1;
+            var K = getKForActivity(activity, allActivities, kOverride);
+            if (A === 1) {
+                return 'Tác giả duy nhất: ' + HText + 'h';
+            }
+            if (isEffectivePrimary(activity)) {
+                var part1 = Math.round((H * 1 / 3) * (1 / K));
+                var part2 = Math.round((H * 2 / 3) * (1 / A));
+                return 'Vai trò chính: (1/3 x ' + HText + ') x (1/' + K + ') = ' + part1 + 'h; ' +
+                       'Nhóm tác giả: (2/3 x ' + HText + ') x (1/' + A + ') = ' + part2 + 'h; ' +
                        'Tổng: ' + (part1 + part2) + 'h';
             }
             var partCoAuthor = Math.round((H * 2 / 3) * (1 / A));
-            return 'Đồng tác giả: (2/3 x ' + H + ') x (1/' + A + ') = ' + partCoAuthor + 'h';
+            return 'Đồng tác giả: (2/3 x ' + HText + ') x (1/' + A + ') = ' + partCoAuthor + 'h';
+        }
+
+        function getDisplayFormulaHtml(activity, allActivities, kOverride) {
+            var banner = getAdminFormulaBannerHtml(activity);
+            var mutedOpen = banner ? '<div class="formula-muted">' : '';
+            var mutedClose = banner ? '</div>' : '';
+
+            var H = getEffectiveHours(activity);
+            var HText = formatHours(H);
+            var A = parseInt(activity.totalAuthors) || 1;
+            var K = getKForActivity(activity, allActivities, kOverride);
+            var kNote = getScoreFormulaKNote(activity, allActivities, kOverride);
+            var consNote = getConsensusFormulaNote(activity, allActivities, kOverride);
+            var hNote = getEffectiveHoursNote(activity);
+            var noteHtml = kNote
+                ? '<div class="formula-k-note">' + escapeHtml(kNote) + '</div>'
+                : '';
+            var consNoteHtml = consNote
+                ? '<div class="formula-k-note">' + escapeHtml(consNote) + '</div>'
+                : '';
+            var hNoteHtml = hNote
+                ? '<div class="formula-k-note">' + escapeHtml(hNote) + '</div>'
+                : '';
+
+            var inner = '';
+            if (A === 1) {
+                inner = 'Tác giả duy nhất: ' + HText + 'h' + hNoteHtml;
+            } else if (isEffectivePrimary(activity)) {
+                var part1 = Math.round((H * 1 / 3) * (1 / K));
+                var part2 = Math.round((H * 2 / 3) * (1 / A));
+                inner = '<strong>Tác giả chính thuộc Viện:</strong><br/>' +
+                       'Phần vai trò chính: (1/3 × ' + HText + ') × (1/' + K + ') = ' + part1 + 'h<br/>' +
+                       'Phần chia theo nhóm tác giả: (2/3 × ' + HText + ') × (1/' + A + ') = ' + part2 + 'h<br/>' +
+                       '<strong>Tổng: ' + (part1 + part2) + 'h</strong>' +
+                       hNoteHtml +
+                       noteHtml +
+                       consNoteHtml;
+            } else {
+                var part2c = Math.round((H * 2 / 3) * (1 / A));
+                inner = '<strong>Đồng tác giả thuộc Viện:</strong><br/>' +
+                   'Phần chia theo nhóm tác giả: (2/3 × ' + HText + ') × (1/' + A + ') = ' + part2c + 'h' +
+                   hNoteHtml;
+            }
+            return banner + mutedOpen + inner + mutedClose;
+        }
+
+        function updateTotalKpiScoreFromComputed() {
+            if (!lastSearchResult || !lastSearchResult.activities) return;
+            var all = lastSearchResult.allActivities || [];
+            var sum = 0;
+            lastSearchResult.activities.forEach(function(a, i) {
+                sum += computeFinalScoreHours(a, all, kOverridesByIndex[i]);
+            });
+            document.getElementById('totalScore').textContent = sum.toLocaleString() + ' giờ';
+        }
+
+        function refreshActivityCardKUI(cardIndex, skipTotalUpdate) {
+            if (!lastSearchResult || !lastSearchResult.activities) return;
+            var card = document.querySelector('.activity-card[data-activity-index="' + cardIndex + '"]');
+            if (!card) return;
+            var a = lastSearchResult.activities[cardIndex];
+            var allActivities = lastSearchResult.allActivities || [];
+            var kOr = kOverridesByIndex[cardIndex];
+            var formulaEl = card.querySelector('.formula-box-inner');
+            var scoreEl = card.querySelector('.activity-score');
+            if (formulaEl) formulaEl.innerHTML = getDisplayFormulaHtml(a, allActivities, kOr);
+            if (scoreEl) scoreEl.textContent = computeFinalScoreHours(a, allActivities, kOr).toLocaleString() + ' giờ';
+            var invCb = card.querySelector('.admin-invalid-cb');
+            var napCb = card.querySelector('.admin-no-points-cb');
+            if (invCb) invCb.checked = isActivityMarkedInvalid(a);
+            if (napCb) napCb.checked = isAuthorMarkedNoPoints(a);
+            var consCb = card.querySelector('.admin-consensus-cb');
+            var consRow = card.querySelector('.admin-consensus-row');
+            if (consCb && consRow) {
+                var en = consensusUiEnabled(a, cardIndex, allActivities);
+                consCb.disabled = !en;
+                consCb.checked = isConsensusMarked(a);
+                consRow.classList.toggle('consensus-row-muted', !en);
+            }
+            card.classList.toggle('activity-card-muted', isAgreementBlockedForCurrentUser(a));
+            if (!skipTotalUpdate) updateTotalKpiScoreFromComputed();
+        }
+
+        function refreshCardsAfterInvalidChange(encodedGroupKey) {
+            if (!lastSearchResult || !lastSearchResult.activities) return;
+            var gk = decodeURIComponent(encodedGroupKey);
+            lastSearchResult.activities.forEach(function(a, i) {
+                if (getActivityGroupKey(a) === gk) {
+                    refreshActivityCardKUI(i, true);
+                }
+            });
+            updateTotalKpiScoreFromComputed();
         }
 
         async function exportToWord() {
@@ -411,8 +1800,11 @@
             var year = lastSearchResult.year || '';
             var activities = lastSearchResult.activities;
             var allActivities = lastSearchResult.allActivities || [];
+            var kMap = lastSearchResult.kOverridesByIndex || kOverridesByIndex;
             var authorMap = buildAuthorMap(allActivities);
-            var totalScore = activities.reduce(function(sum, a) { return sum + (a.score || 0); }, 0);
+            var totalScore = activities.reduce(function(sum, a, idx) {
+                return sum + computeFinalScoreHours(a, allActivities, kMap[idx]);
+            }, 0);
             var roleNames = { first: 'Tác giả chính', corresponding: 'Tác giả liên hệ', last: 'Tác giả cuối', coauthor: 'Đồng tác giả' };
             var d = window.docx;
             var now = new Date();
@@ -464,7 +1856,41 @@
                 var roleName = roleNames[a.role] || a.role || 'Chưa xác định';
                 var activityType = getActivityType(a);
                 var authorNames = getAuthorNamesForActivity(a, allActivities, authorMap);
-                var formulaText = getScoreFormulaText(a);
+                var formulaExport = getScoreFormulaTextForExport(a, allActivities, kMap[index]);
+                var formulaLines = formulaExport.split('\n');
+                var formulaCellChildren = formulaLines.map(function(line, li) {
+                    var isAlertLine = (isActivityMarkedInvalid(a) || isAuthorMarkedNoPoints(a)) && li === 0 && formulaLines.length > 1;
+                    var runOpts = { text: line, size: 22 };
+                    if (isAlertLine) {
+                        runOpts.bold = true;
+                        runOpts.color = 'C53030';
+                    }
+                    return new d.Paragraph({
+                        spacing: li ? { before: li === 1 ? 80 : 40 } : {},
+                        children: [new d.TextRun(runOpts)]
+                    });
+                });
+                var formulaNote = getScoreFormulaKNote(a, allActivities, kMap[index]);
+                if (formulaNote) {
+                    formulaCellChildren.push(new d.Paragraph({
+                        spacing: { before: 80 },
+                        children: [new d.TextRun({ text: formulaNote, italics: true, size: 18, color: '505050' })]
+                    }));
+                }
+                var hEffNote = getEffectiveHoursNote(a);
+                if (hEffNote) {
+                    formulaCellChildren.push(new d.Paragraph({
+                        spacing: { before: 60 },
+                        children: [new d.TextRun({ text: hEffNote, italics: true, size: 18, color: '505050' })]
+                    }));
+                }
+                var consensusNote = getConsensusFormulaNote(a, allActivities, kMap[index]);
+                if (consensusNote) {
+                    formulaCellChildren.push(new d.Paragraph({
+                        spacing: { before: 60 },
+                        children: [new d.TextRun({ text: consensusNote, italics: true, size: 18, color: '505050' })]
+                    }));
+                }
 
                 var authorParts = [];
                 authorNames.forEach(function(author, idx) {
@@ -486,8 +1912,8 @@
                                 return new d.TextRun({ text: part.text || '', bold: !!part.bold, size: 22 });
                             }) })] }),
                             new d.TableCell({ children: [new d.Paragraph({ children: [new d.TextRun({ text: String(H), size: 22 })] })] }),
-                            new d.TableCell({ children: [new d.Paragraph({ children: [new d.TextRun({ text: String(a.score || 0), size: 22 })] })] }),
-                            new d.TableCell({ children: [new d.Paragraph({ children: [new d.TextRun({ text: formulaText, size: 22 })] })] })
+                            new d.TableCell({ children: [new d.Paragraph({ children: [new d.TextRun({ text: String(computeFinalScoreHours(a, allActivities, kMap[index])), size: 22 })] })] }),
+                            new d.TableCell({ children: formulaCellChildren })
                         ]
                     })
                 );
@@ -661,21 +2087,32 @@
         }
 
         function displayResults(name, activities, year, allActivities) {
+            kOverridesByIndex = {};
+            activities.forEach(function(a, idx) {
+                var sk = getKOverrideForActivity(a);
+                if (sk !== undefined) kOverridesByIndex[idx] = sk;
+            });
             document.getElementById('searchView').classList.add('hidden');
             document.getElementById('resultView').classList.remove('hidden');
+            var hs = document.getElementById('helpSidebar');
+            if (hs) hs.classList.remove('hidden');
             document.getElementById('userName').textContent = name + ' - Năm ' + year;
-            var totalScore = activities.reduce(function(sum, a) { return sum + (a.score || 0); }, 0);
+            var totalScore = activities.reduce(function(sum, a, i) {
+                return sum + computeFinalScoreHours(a, allActivities, kOverridesByIndex[i]);
+            }, 0);
             document.getElementById('totalScore').textContent = totalScore.toLocaleString() + ' giờ';
+            updateAdminSessionBar();
             document.getElementById('activityCount').textContent = activities.length + ' hoạt động';
             var authorMap = buildAuthorMap(allActivities);
             lastSearchResult = {
                 name: name,
                 year: year,
                 activities: activities,
-                allActivities: allActivities
+                allActivities: allActivities,
+                kOverridesByIndex: kOverridesByIndex
             };
             
-            var listHTML = activities.map(function(a) {
+            var listHTML = activities.map(function(a, idx) {
                 var roleNames = { first: 'Tác giả chính', corresponding: 'Tác giả liên hệ', last: 'Tác giả cuối', coauthor: 'Đồng tác giả' };
                 var activityType = getActivityType(a);
                 
@@ -685,25 +2122,21 @@
                 
                 var H = parseInt(a.H) || 600;
                 var A = parseInt(a.totalAuthors) || 1;
-                
-                var formula = '';
-                if (A === 1) {
-                    formula = 'Tác giả duy nhất: ' + H + 'h';
-                } else {
-                    var K = 1;
-                    
-                    if (a.role === 'first' || a.role === 'corresponding' || a.role === 'last') {
-                        var part1 = Math.round((H * 1/3) * (1/K));
-                        var part2 = Math.round((H * 2/3) * (1/A));
-                        formula = '<strong>Tác giả chính thuộc Viện:</strong><br/>' +
-                                 'Phần vai trò chính: (1/3 × ' + H + ') × (1/' + K + ') = ' + part1 + 'h<br/>' +
-                                 'Phần chia theo nhóm tác giả: (2/3 × ' + H + ') × (1/' + A + ') = ' + part2 + 'h<br/>' +
-                                 '<strong>Tổng: ' + (part1 + part2) + 'h</strong>';
-                    } else {
-                        var part2 = Math.round((H * 2/3) * (1/A));
-                        formula = '<strong>Đồng tác giả thuộc Viện:</strong><br/>' +
-                                 'Phần chia theo nhóm tác giả: (2/3 × ' + H + ') × (1/' + A + ') = ' + part2 + 'h';
+                var autoK = getPrimaryAuthorCount(a, allActivities);
+                var kOverride = kOverridesByIndex[idx] !== undefined ? kOverridesByIndex[idx] : getKOverrideForActivity(a);
+                var formula = getDisplayFormulaHtml(a, allActivities, kOverride);
+
+                var kRow = '';
+                if (isEffectivePrimary(a) && A > 1) {
+                    var opts = '<option value="auto"' + (kOverride === undefined ? ' selected' : '') + '>Tự động (mặc định: ' + autoK + ')</option>';
+                    for (var kv = 1; kv <= 4; kv++) {
+                        opts += '<option value="' + kv + '"' + (kOverride === kv ? ' selected' : '') + '>' + kv + '</option>';
                     }
+                    kRow = '<div class="k-override-row">' +
+                        '<label for="kSelect-' + idx + '">Hệ số K (phần tác giả chính):</label>' +
+                        '<select id="kSelect-' + idx + '" class="k-override-select" data-activity-index="' + idx + '">' + opts + '</select>' +
+                        '<span class="k-hint">Chỉ đổi phần (1/3×H)÷K; phần (2/3×H)÷A không đổi.</span>' +
+                        '</div>';
                 }
                 
                 var journalInfo = a.journal ? '<div style="color:#718096;font-size:0.9em;margin-bottom:10px">' + a.journal + (a.year ? ' (' + a.year + ')' : '') + '</div>' : '';
@@ -722,6 +2155,39 @@
                 var authorListHtml = authorNames.length > 0
                     ? '<div style="color:#4a5568;font-size:0.9em;margin:8px 0 10px;"><strong>Tác giả:</strong> ' + formattedAuthorNames.join(', ') + '</div>'
                     : '';
+                var heffAdminRow = '';
+                if (isAdminSession()) {
+                    var heffOut = getPrimaryOutsideForActivity(a);
+                    var heffInUnit = getInUnitAuthorCountForActivity(a);
+                    var heffPool = Math.round(getEffectiveHours(a) * 100) / 100;
+                    var heffV = getHeffValidation(a);
+                    var projectReg = isProjectRegisteredProduct(a);
+                    var projectCfg = getProjectRuleConfig(a);
+                    var projectYearHours = getProjectYearHours(a);
+                    var baseHForView = projectReg ? Math.round((H * 2 / 3) * 100) / 100 : H;
+                    var projectMultiYearBlock = '';
+                    if (isDeTaiKhCnActivity(a)) {
+                        projectMultiYearBlock =
+                        '<div class="admin-project-rule-row">' +
+                        '<label><input type="checkbox" class="admin-project-activity-cb" data-activity-index="' + idx + '"' + (projectCfg.isProjectActivity ? ' checked' : '') + '> Hoạt động đề tài/dự án nhiều năm (phân bổ giờ theo tháng chính thức)</label>' +
+                        '<div class="admin-heff-hint" style="margin-top:6px;">Tổng giờ toàn kỳ dùng cho phân bổ = H<sub>max</sub> (' + H + ' giờ).</div>' +
+                        '<label>Tháng bắt đầu (YYYY-MM): <input type="text" class="admin-project-start-ym-input" data-activity-index="' + idx + '" placeholder="2024-07" value="' + (projectCfg.startYm || '') + '"' + (projectCfg.isProjectActivity ? '' : ' disabled') + ' /></label>' +
+                        '<label>Tháng kết thúc (YYYY-MM): <input type="text" class="admin-project-end-ym-input" data-activity-index="' + idx + '" placeholder="2026-06" value="' + (projectCfg.endYm || '') + '"' + (projectCfg.isProjectActivity ? '' : ' disabled') + ' /></label>' +
+                        '<div class="admin-heff-hint">Giờ đề tài cho năm ' + (a.year || year) + ': ' + (projectYearHours === null ? 'chưa đủ dữ liệu (mặc định dùng H_max)' : (Math.round(projectYearHours * 100) / 100 + ' giờ')) + '.</div>' +
+                        '</div>';
+                    }
+                    heffAdminRow =
+                        '<div class="admin-heff-row">' +
+                        projectMultiYearBlock +
+                        '<div class="admin-project-flag-row"><label><input type="checkbox" class="admin-project-registered-cb" data-activity-index="' + idx + '"' + (projectReg ? ' checked' : '') + '> Sản phẩm thuộc đề tài/chương trình NCKH và nằm trong danh mục đăng ký (áp dụng H = 2/3 × Hmax)</label></div>' +
+                        '<label><input type="checkbox" class="admin-primary-outside-cb" data-activity-index="' + idx + '"' + (heffOut ? ' checked' : '') + '> Tác giả chính ngoài Viện</label>' +
+                        '<label style="margin-bottom:6px;">Số tác giả thuộc Viện: ' +
+                        '<input type="number" class="admin-inunit-count-input' + (heffOut && !heffV.ok ? ' heff-input-invalid' : '') + '" data-activity-index="' + idx + '" min="0" max="' + A + '" value="' + (heffOut && !heffV.ok ? '' : heffInUnit) + '"' + (heffOut ? '' : ' disabled') + ' /></label>' +
+                        '<div class="admin-heff-hint">H cơ sở hiện tại: ' + baseHForView + ' giờ' + (projectReg ? ' (đã áp dụng 2/3 từ Hmax)' : '') + '.</div>' +
+                        '<div class="admin-heff-hint">H_eff dùng để tính điểm: ' + baseHForView + ' × (' + heffInUnit + '/' + A + ') = ' + heffPool + ' giờ.</div>' +
+                        (heffV.ok ? '' : '<div class="admin-heff-hint" style="color:#c53030;margin-top:6px;"><strong>Cảnh báo:</strong> ' + escapeHtml(heffV.message) + '</div>') +
+                        '</div>';
+                }
                 var authorBadge = authorNames.length > 1 ? '<span class="badge">' + authorNames.length + ' tác giả</span>' : '';
                 var detailInfoHtml = '<div style="color:#4a5568;font-size:0.9em;line-height:1.6;margin:6px 0 10px;">' +
                     '<div><strong>Loại hoạt động:</strong> ' + (a.activityType || activityType) + '</div>' +
@@ -729,9 +2195,100 @@
                     '<div><strong>Vai trò:</strong> ' + (roleName || a.role || 'Chưa xác định') + '</div>' +
                     '<div><strong>H tối đa:</strong> ' + H + ' giờ</div>' +
                 '</div>';
+
+                var encGroup = encodeURIComponent(getActivityGroupKey(a));
+                var encRow = encodeURIComponent(getAuthorRowStorageKey(a));
+                var adminPanel = '';
+                if (isAdminSession()) {
+                    adminPanel =
+                        '<div class="admin-activity-panel">' +
+                        '<div class="admin-panel-title">Quản trị điểm</div>' +
+                        '<label><input type="checkbox" class="admin-invalid-cb" data-activity-index="' + idx + '" data-inv-enc="' + encGroup + '"' +
+                            (isActivityMarkedInvalid(a) ? ' checked' : '') +
+                            '> Hoạt động không hợp lệ — không cộng điểm (áp dụng cho cả công trình này)</label>' +
+                        '<label><input type="checkbox" class="admin-no-points-cb" data-activity-index="' + idx + '" data-row-enc="' + encRow + '"' +
+                            (isAuthorMarkedNoPoints(a) ? ' checked' : '') +
+                            '> Tác giả không nhận điểm — không cộng điểm cho tác giả này ở hoạt động này</label>' +
+                        '<div class="admin-panel-hint">Các thay đổi (K, đồng thuận, không hợp lệ, tác giả không nhận điểm) lưu trên trình duyệt; nếu bật đồng bộ cloud thì thêm lên sheet KPI_Config.</div>' +
+                        '</div>';
+                }
+
+                var consensusRow = '';
+                if (isAdminSession() && isEffectivePrimary(a) && A > 1) {
+                    var consEn = consensusUiEnabled(a, idx, allActivities);
+                    consensusRow =
+                        '<div class="admin-consensus-row' + (consEn ? '' : ' consensus-row-muted') + '">' +
+                        '<label><input type="checkbox" class="admin-consensus-cb" data-activity-index="' + idx + '"' +
+                        (consEn ? '' : ' disabled') +
+                        (isConsensusMarked(a) ? ' checked' : '') +
+                        '> Có đơn đồng thuận phân chia K (giữa các tác giả chính)</label>' +
+                        '<div class="admin-consensus-hint">Chỉ bật khi chọn <strong>K ≠ 2</strong> (ví dụ K = 1 cùng lúc có first và last). K = 2: mục này tắt (mặc định 2 tác giả chính).</div>' +
+                        '</div>';
+                }
+
+                var allocationRow = '';
+                if (isAdminSession()) {
+                    var allocMode = getAllocationMode(a);
+                    var allocStrategy = getAgreementStrategy(a);
+                    var assigneeNorm = getAllocationAssignee(a);
+                    var assigneeText = assigneeNorm ? assigneeNorm : 'chưa quy tác giả';
+                    var manualInputs = '';
+                    if (allocMode === 'agreement' && allocStrategy === 'manual_split') {
+                        var lockedAlloc = isAllocationLocked(a);
+                        var manualRows = authorNames.map(function(an) {
+                            var nrm = normalizeName(an);
+                            var cur = getManualAllocatedHoursByNorm(a, nrm);
+                            var v = (cur === null || cur === undefined) ? '' : String(cur);
+                            return '<div style="display:flex;gap:8px;align-items:center;margin-top:6px;">' +
+                                '<div style="flex:1;color:#2d3748;">' + escapeHtml(an) + '</div>' +
+                                '<input type="number" min="0" step="1" class="admin-manual-alloc-input" data-activity-index="' + idx + '" data-author-norm="' + nrm + '" value="' + v + '"' + (lockedAlloc ? ' disabled' : '') + ' style="width:110px;padding:6px 8px;font-size:0.88em;border:1px solid #cbd5e0;border-radius:6px;" />' +
+                                '<span style="color:#4a5568;font-size:0.85em;">giờ</span>' +
+                            '</div>';
+                        });
+                        var pool = getActivityPoolHours(a);
+                        var allocated = sumManualAllocatedHoursForGroup(a, allActivities);
+                        var isValidManual = allocated === pool;
+                        var isHeffValid = getHeffValidation(a).ok;
+                        var tone = isValidManual ? '#2f855a' : '#c53030';
+                        var statusText = isValidManual
+                            ? 'Tổng phân bổ hợp lệ.'
+                            : 'Cảnh báo: tổng phân bổ khác H_pool, chưa thể chốt.';
+                        var lockBtn = lockedAlloc
+                            ? '<button type="button" class="admin-allocation-lock unlock" data-activity-index="' + idx + '" data-lock-action="unlock">Mở chốt phân bổ</button>'
+                            : '<button type="button" class="admin-allocation-lock" data-activity-index="' + idx + '" data-lock-action="lock"' + ((isValidManual && isHeffValid) ? '' : ' disabled') + '>Chốt phân bổ</button>';
+                        manualInputs = '<div class="admin-allocation-hint" style="margin-top:8px;">Nhập giờ cho từng tác giả theo văn bản thỏa thuận.</div>' +
+                            '<div style="margin-top:6px;padding:8px;background:#fff;border:1px solid #f6ad55;border-radius:8px;">' + manualRows.join('') +
+                            '<div style="margin-top:8px;font-size:0.84em;color:' + tone + ';"><strong>Tổng đã phân bổ:</strong> ' + allocated + ' / ' + pool + ' giờ. ' + statusText + '</div>' +
+                            (isHeffValid ? '' : '<div style="margin-top:6px;font-size:0.84em;color:#c53030;"><strong>Chưa thể chốt:</strong> thông tin H_eff chưa hợp lệ.</div>') +
+                            lockBtn +
+                            '</div>';
+                    }
+                    allocationRow =
+                        '<div class="admin-allocation-row">' +
+                        '<label for="allocMode-' + idx + '">Cách tính điểm công trình:</label>' +
+                        '<select id="allocMode-' + idx + '" class="admin-allocation-mode-select" data-activity-index="' + idx + '">' +
+                            '<option value="auto"' + (allocMode === 'auto' ? ' selected' : '') + '>Cách 2 (mặc định tự động)</option>' +
+                            '<option value="agreement"' + (allocMode === 'agreement' ? ' selected' : '') + '>Cách 1 (theo thỏa thuận tác giả)</option>' +
+                        '</select>' +
+                        (allocMode === 'agreement'
+                            ? '<div style="margin-top:8px;"><label for="allocStrategy-' + idx + '">Kiểu phân bổ Cách 1:</label>' +
+                              '<select id="allocStrategy-' + idx + '" class="admin-allocation-strategy-select" data-activity-index="' + idx + '">' +
+                                '<option value="single_assignee"' + (allocStrategy === 'single_assignee' ? ' selected' : '') + '>Quy toàn bộ cho 1 tác giả</option>' +
+                                '<option value="manual_split"' + (allocStrategy === 'manual_split' ? ' selected' : '') + '>Chia tay cho từng tác giả</option>' +
+                              '</select></div>'
+                            : '') +
+                        '<div class="admin-allocation-hint">Cách 1 hiện lưu: <strong>' + escapeHtml(assigneeText) + '</strong>.</div>' +
+                        (allocMode === 'agreement'
+                            ? (allocStrategy === 'single_assignee'
+                                ? '<button type="button" class="admin-allocation-assign" data-activity-index="' + idx + '">Quy toàn bộ điểm cho tác giả đang xét (' + escapeHtml(name) + ')</button>'
+                                : manualInputs)
+                            : '') +
+                        '</div>';
+                }
+                var isMutedByAgreement = isAgreementBlockedForCurrentUser(a);
                 
-                return '<div class="activity-card">' +
-                    '<div class="activity-title">' + (a.title || 'Không có tiêu đề') + '</div>' +
+                return '<div class="activity-card' + (isMutedByAgreement ? ' activity-card-muted' : '') + '" data-activity-index="' + idx + '" data-inv-enc="' + encGroup + '">' +
+                    '<div class="activity-title"><span class="activity-index-num">' + (idx + 1) + '.</span>' + (a.title || 'Không có tiêu đề') + '</div>' +
                     journalInfo +
                     '<div class="badges">' +
                         '<span class="badge badge-category">' + activityType + '</span>' +
@@ -742,21 +2299,190 @@
                     '</div>' +
                     authorListHtml +
                     detailInfoHtml +
+                    heffAdminRow +
+                    adminPanel +
+                    kRow +
+                    consensusRow +
+                    allocationRow +
                     '<div style="background:#dfe8ff;border:1px solid #b8c8ff;padding:12px;border-radius:8px;margin:10px 0;font-size:0.85em;color:#2f4aa0;line-height:1.6;">' +
                         '<div style="font-weight:600;margin-bottom:5px;">📐 Công thức tính điểm:</div>' +
-                        '<div style="font-family:monospace;">' + formula + '</div>' +
+                        '<div class="formula-box-inner" style="font-family:monospace;">' + formula + '</div>' +
                     '</div>' +
-                    '<div class="activity-score">' + (a.score || 0).toLocaleString() + ' giờ</div>' +
+                    '<div class="activity-score">' + computeFinalScoreHours(a, allActivities, kOverride).toLocaleString() + ' giờ</div>' +
                 '</div>';
             }).join('');
             document.getElementById('activitiesList').innerHTML = listHTML;
+            fetchCloudConfigAndMerge(year);
         }
 
         function goBack() {
+            kOverridesByIndex = {};
             document.getElementById('searchView').classList.remove('hidden');
             document.getElementById('resultView').classList.add('hidden');
+            var hs = document.getElementById('helpSidebar');
+            if (hs) hs.classList.add('hidden');
             document.getElementById('nameInput').value = '';
             document.getElementById('errorMessage').classList.add('hidden');
+        }
+
+        function getAdminSnapshots() {
+            try {
+                var raw = localStorage.getItem(LS_ADMIN_SNAPSHOTS_KEY);
+                var arr = raw ? JSON.parse(raw) : [];
+                return Array.isArray(arr) ? arr : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveAdminSnapshot() {
+            if (!isAdminSession()) return;
+            if (!lastSearchResult || !lastSearchResult.activities || lastSearchResult.activities.length === 0) {
+                alert('Chưa có dữ liệu để lưu. Vui lòng tra cứu trước.');
+                return;
+            }
+            var now = new Date();
+            var name = (lastSearchResult.name || '').toString();
+            var year = (lastSearchResult.year || '').toString();
+            var allActivities = lastSearchResult.allActivities || [];
+            var kMap = lastSearchResult.kOverridesByIndex || kOverridesByIndex;
+            var totalScore = (lastSearchResult.activities || []).reduce(function(sum, a, idx) {
+                return sum + computeFinalScoreHours(a, allActivities, kMap[idx]);
+            }, 0);
+
+            var snapshot = {
+                id: 'snap_' + now.getTime(),
+                createdAt: now.toISOString(),
+                name: name,
+                year: year,
+                activityCount: lastSearchResult.activities.length,
+                totalScore: Math.round(totalScore * 100) / 100,
+                // Lưu đủ dữ liệu để đối chiếu lại về sau
+                payload: lastSearchResult
+            };
+
+            var arr = getAdminSnapshots();
+            arr.unshift(snapshot);
+            // giữ tối đa 50 lượt gần nhất để tránh phình localStorage
+            if (arr.length > 50) arr = arr.slice(0, 50);
+            localStorage.setItem(LS_ADMIN_SNAPSHOTS_KEY, JSON.stringify(arr));
+            // Nếu có bật Supabase cấu hình, lưu thêm lên cloud
+            pushSnapshotToSupabase(snapshot).then(function(ok) {
+                var cloudMsg = ok ? ' (đã lưu Supabase)' : (isSupabaseKpiConfigReady() ? ' (không lưu được Supabase)' : '');
+                alert('Đã lưu lượt tra cứu cho "' + name + '" năm ' + year + ' (tổng ' + snapshot.totalScore + ' giờ)' + cloudMsg + '.');
+            });
+        }
+
+        function openSnapshotsModal() {
+            if (!isAdminSession()) return;
+            if (!isSupabaseKpiConfigReady()) {
+                alert('Chưa cấu hình Supabase để tải snapshot.');
+                return;
+            }
+            var modal = document.getElementById('snapshotsModal');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            // gợi ý filter theo lượt vừa tra cứu
+            var y = document.getElementById('snapFilterYear');
+            var n = document.getElementById('snapFilterName');
+            if (y && !y.value && lastSearchResult && lastSearchResult.year) y.value = String(lastSearchResult.year);
+            if (n && !n.value && lastSearchResult && lastSearchResult.name) n.value = String(lastSearchResult.name);
+        }
+
+        function closeSnapshotsModal() {
+            var modal = document.getElementById('snapshotsModal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+        }
+
+        function setSnapshotsStatus(text) {
+            var el = document.getElementById('snapshotsStatus');
+            if (el) el.textContent = text || '';
+        }
+
+        function escapeHtmlAttr(s) {
+            return escapeHtml(s).replace(/"/g, '&quot;');
+        }
+
+        function fetchSnapshotsFromSupabase(filterYear, filterName) {
+            if (!isSupabaseKpiConfigReady()) return Promise.resolve([]);
+            var base = getSupabaseRestTableUrl(SUPABASE_SNAPSHOTS_TABLE);
+            var qs = [
+                'select=id,created_at,year,researcher_name,activity_count,total_score,payload',
+                'order=created_at.desc',
+                'limit=50'
+            ];
+            var fy = (filterYear || '').toString().trim();
+            var fn = (filterName || '').toString().trim();
+            if (fy) qs.push('year=eq.' + encodeURIComponent(fy));
+            if (fn) qs.push('researcher_name=ilike.' + encodeURIComponent('%' + fn + '%'));
+            var url = base + '?' + qs.join('&');
+            return supabaseRequest(url, { method: 'GET' })
+                .then(function(r) { return r.ok ? r.json() : []; })
+                .catch(function() { return []; });
+        }
+
+        function formatViDateTime(iso) {
+            try { return new Date(iso).toLocaleString('vi-VN'); } catch (e) { return String(iso || ''); }
+        }
+
+        function renderSnapshotsList(rows) {
+            var wrap = document.getElementById('snapshotsList');
+            if (!wrap) return;
+            if (!rows || rows.length === 0) {
+                wrap.innerHTML = '<div style="padding:12px;color:#718096;">Không có snapshot phù hợp.</div>';
+                return;
+            }
+            var html = rows.map(function(r) {
+                var created = formatViDateTime(r.created_at || r.createdAt);
+                var nm = (r.researcher_name || r.name || '').toString();
+                var yr = (r.year || '').toString();
+                var cnt = (r.activity_count || r.activityCount || 0);
+                var ts = (r.total_score !== undefined && r.total_score !== null) ? r.total_score : r.totalScore;
+                return '<div class="snap-row" style="display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 12px;border-top:1px solid #e2e8f0;">' +
+                    '<div style="min-width:0;">' +
+                        '<div style="font-weight:700;color:#2d3748;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(nm || '[Không rõ tên]') + ' — ' + escapeHtml(yr || '') + '</div>' +
+                        '<div style="font-size:0.88em;color:#718096;margin-top:2px;">' +
+                            escapeHtml(created) + ' • ' + escapeHtml(String(cnt)) + ' hoạt động • Tổng: ' + escapeHtml(String(ts)) + ' giờ' +
+                        '</div>' +
+                    '</div>' +
+                    '<button type="button" class="btn-export snap-open-btn" data-snap-id="' + escapeHtmlAttr(String(r.id || '')) + '" style="margin:0;padding:8px 10px;background:linear-gradient(135deg,#2f855a 0%,#276749 100%);">Mở</button>' +
+                '</div>';
+            }).join('');
+            wrap.innerHTML = '<div style="border-top:0;">' + html + '</div>';
+        }
+
+        function loadSnapshotsFromUi() {
+            if (!isAdminSession()) return;
+            if (!isSupabaseKpiConfigReady()) {
+                alert('Chưa cấu hình Supabase để tải snapshot.');
+                return;
+            }
+            var y = document.getElementById('snapFilterYear');
+            var n = document.getElementById('snapFilterName');
+            setSnapshotsStatus('Đang tải danh sách snapshot...');
+            fetchSnapshotsFromSupabase(y ? y.value : '', n ? n.value : '')
+                .then(function(rows) {
+                    setSnapshotsStatus('Tải xong: ' + (rows ? rows.length : 0) + ' snapshot.');
+                    renderSnapshotsList(rows || []);
+                    // cache để mở nhanh
+                    window.__snapCache = {};
+                    (rows || []).forEach(function(r) { window.__snapCache[String(r.id)] = r; });
+                });
+        }
+
+        function openSnapshotById(id) {
+            var cache = window.__snapCache || {};
+            var row = cache[String(id)];
+            if (!row || !row.payload) {
+                alert('Không tìm thấy dữ liệu snapshot để mở.');
+                return;
+            }
+            lastSearchResult = row.payload;
+            if (row.payload && row.payload.kOverridesByIndex) kOverridesByIndex = row.payload.kOverridesByIndex;
+            // nạp lại giao diện
+            displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || []);
+            closeSnapshotsModal();
         }
 
         document.getElementById('nameInput').addEventListener('keypress', function(e) {
@@ -766,6 +2492,226 @@
         document.getElementById('searchBtn').addEventListener('click', searchKPI);
         document.getElementById('backBtn').addEventListener('click', goBack);
         document.getElementById('exportWordBtn').addEventListener('click', exportToWord);
+        document.getElementById('saveSnapshotBtn').addEventListener('click', saveAdminSnapshot);
+        document.getElementById('openSnapshotsBtn').addEventListener('click', openSnapshotsModal);
+        document.getElementById('closeSnapshotsBtn').addEventListener('click', closeSnapshotsModal);
+        document.getElementById('loadSnapshotsBtn').addEventListener('click', loadSnapshotsFromUi);
+
+        // hiển thị nút lưu snapshot cho admin
+        (function() {
+            var btn = document.getElementById('saveSnapshotBtn');
+            if (!btn) return;
+            if (isAdminSession()) btn.classList.remove('hidden');
+        })();
+
+        // hiển thị nút mở lịch sử snapshot cho admin (và chỉ khi có supabase config)
+        (function() {
+            var btn = document.getElementById('openSnapshotsBtn');
+            if (!btn) return;
+            if (isAdminSession() && isSupabaseKpiConfigReady()) btn.classList.remove('hidden');
+        })();
+
+        // click mở snapshot trong danh sách
+        (function() {
+            var list = document.getElementById('snapshotsList');
+            if (!list) return;
+            list.addEventListener('click', function(e) {
+                var t = e.target;
+                if (!t || !t.classList || !t.classList.contains('snap-open-btn')) return;
+                var id = t.getAttribute('data-snap-id');
+                if (!id) return;
+                openSnapshotById(id);
+            });
+        })();
+
+        document.getElementById('activitiesList').addEventListener('change', function(e) {
+            var t = e.target;
+            if (!t.classList) return;
+
+            if (t.classList.contains('k-override-select')) {
+                var idx = parseInt(t.getAttribute('data-activity-index'), 10);
+                if (isNaN(idx)) return;
+                var val = t.value;
+                if (val === 'auto') {
+                    delete kOverridesByIndex[idx];
+                    if (lastSearchResult && lastSearchResult.activities[idx]) setKOverrideInStorage(lastSearchResult.activities[idx], undefined);
+                } else {
+                    kOverridesByIndex[idx] = parseInt(val, 10);
+                    if (lastSearchResult && lastSearchResult.activities[idx]) setKOverrideInStorage(lastSearchResult.activities[idx], kOverridesByIndex[idx]);
+                }
+                if (lastSearchResult) lastSearchResult.kOverridesByIndex = kOverridesByIndex;
+                if (lastSearchResult && lastSearchResult.activities[idx]) {
+                    var act = lastSearchResult.activities[idx];
+                    var allA = lastSearchResult.allActivities || [];
+                    if (getEffectiveKForUi(act, idx, allA) === 2 && isConsensusMarked(act)) {
+                        setConsensus(act, false);
+                    }
+                }
+                pushAuthorRowToCloudForIndex(idx);
+                refreshActivityCardKUI(idx);
+                return;
+            }
+
+            if (t.classList.contains('admin-consensus-cb')) {
+                var idxC = parseInt(t.getAttribute('data-activity-index'), 10);
+                if (!lastSearchResult || isNaN(idxC)) return;
+                setConsensus(lastSearchResult.activities[idxC], t.checked);
+                pushAuthorRowToCloudForIndex(idxC);
+                refreshActivityCardKUI(idxC);
+                return;
+            }
+
+            if (t.classList.contains('admin-allocation-mode-select')) {
+                var idxM = parseInt(t.getAttribute('data-activity-index'), 10);
+                if (!lastSearchResult || isNaN(idxM)) return;
+                var activityM = lastSearchResult.activities[idxM];
+                setAllocationMode(activityM, t.value === 'agreement' ? 'agreement' : 'auto');
+                if (t.value !== 'agreement') {
+                    setAllocationAssignee(activityM, '');
+                    setAgreementStrategy(activityM, 'single_assignee');
+                }
+                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || []);
+                return;
+            }
+
+            if (t.classList.contains('admin-primary-outside-cb')) {
+                var idxO = parseInt(t.getAttribute('data-activity-index'), 10);
+                if (!lastSearchResult || isNaN(idxO)) return;
+                var activityO = lastSearchResult.activities[idxO];
+                setPrimaryOutsideOverride(activityO, t.checked);
+                if (t.checked) setInUnitAuthorCountOverride(activityO, getInUnitAuthorCountForActivity(activityO));
+                refreshActivityCardKUI(idxO);
+                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || []);
+                return;
+            }
+
+            if (t.classList.contains('admin-project-registered-cb')) {
+                var idxP = parseInt(t.getAttribute('data-activity-index'), 10);
+                if (!lastSearchResult || isNaN(idxP)) return;
+                var activityP = lastSearchResult.activities[idxP];
+                setProjectRegisteredProduct(activityP, t.checked);
+                refreshActivityCardKUI(idxP);
+                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || []);
+                return;
+            }
+
+            if (t.classList.contains('admin-project-activity-cb')) {
+                var idxPA = parseInt(t.getAttribute('data-activity-index'), 10);
+                if (!lastSearchResult || isNaN(idxPA)) return;
+                var activityPA = lastSearchResult.activities[idxPA];
+                setProjectRuleConfig(activityPA, { isProjectActivityOverride: !!t.checked });
+                refreshActivityCardKUI(idxPA);
+                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || []);
+                return;
+            }
+
+            if (t.classList.contains('admin-project-start-ym-input')) {
+                var idxPS = parseInt(t.getAttribute('data-activity-index'), 10);
+                if (!lastSearchResult || isNaN(idxPS)) return;
+                var activityPS = lastSearchResult.activities[idxPS];
+                setProjectRuleConfig(activityPS, { projectStartYmOverride: (t.value || '').trim() });
+                refreshActivityCardKUI(idxPS);
+                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || []);
+                return;
+            }
+
+            if (t.classList.contains('admin-project-end-ym-input')) {
+                var idxPE = parseInt(t.getAttribute('data-activity-index'), 10);
+                if (!lastSearchResult || isNaN(idxPE)) return;
+                var activityPE = lastSearchResult.activities[idxPE];
+                setProjectRuleConfig(activityPE, { projectEndYmOverride: (t.value || '').trim() });
+                refreshActivityCardKUI(idxPE);
+                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || []);
+                return;
+            }
+
+            if (t.classList.contains('admin-inunit-count-input')) {
+                var idxIU = parseInt(t.getAttribute('data-activity-index'), 10);
+                if (!lastSearchResult || isNaN(idxIU)) return;
+                var activityIU = lastSearchResult.activities[idxIU];
+                setInUnitAuthorCountOverride(activityIU, t.value);
+                refreshActivityCardKUI(idxIU);
+                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || []);
+                return;
+            }
+
+            if (t.classList.contains('admin-allocation-strategy-select')) {
+                var idxS = parseInt(t.getAttribute('data-activity-index'), 10);
+                if (!lastSearchResult || isNaN(idxS)) return;
+                var activityS = lastSearchResult.activities[idxS];
+                setAgreementStrategy(activityS, t.value === 'manual_split' ? 'manual_split' : 'single_assignee');
+                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || []);
+                return;
+            }
+
+            if (t.classList.contains('admin-manual-alloc-input')) {
+                var idxH = parseInt(t.getAttribute('data-activity-index'), 10);
+                var authorNormH = (t.getAttribute('data-author-norm') || '').toString();
+                if (!lastSearchResult || isNaN(idxH) || !authorNormH) return;
+                var activityH = lastSearchResult.activities[idxH];
+                if (isAllocationLocked(activityH)) return;
+                var rawVal = t.value;
+                var numVal = (rawVal === '' ? null : parseInt(rawVal, 10));
+                setManualAllocatedHoursByNorm(activityH, authorNormH, numVal);
+                var rowKey = getActivityGroupKey(activityH) + '||' + authorNormH;
+                pushAuthorRowToCloudByAuthorKey(lastSearchResult.year, rowKey);
+                refreshActivityCardKUI(idxH);
+                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || []);
+                return;
+            }
+
+            if (t.classList.contains('admin-invalid-cb')) {
+                var idxInv = parseInt(t.getAttribute('data-activity-index'), 10);
+                var encInv = t.getAttribute('data-inv-enc');
+                if (!lastSearchResult || isNaN(idxInv) || !encInv) return;
+                setActivityInvalid(lastSearchResult.activities[idxInv], t.checked);
+                refreshCardsAfterInvalidChange(encInv);
+                return;
+            }
+
+            if (t.classList.contains('admin-no-points-cb')) {
+                var idxNp = parseInt(t.getAttribute('data-activity-index'), 10);
+                if (!lastSearchResult || isNaN(idxNp)) return;
+                setAuthorNoPoints(lastSearchResult.activities[idxNp], t.checked);
+                pushAuthorRowToCloudForIndex(idxNp);
+                refreshActivityCardKUI(idxNp);
+            }
+        });
+
+        document.getElementById('activitiesList').addEventListener('click', function(e) {
+            var t = e.target;
+            if (t && t.classList && t.classList.contains('admin-allocation-lock')) {
+                var idxL = parseInt(t.getAttribute('data-activity-index'), 10);
+                if (!lastSearchResult || isNaN(idxL)) return;
+                var actL = lastSearchResult.activities[idxL];
+                var action = (t.getAttribute('data-lock-action') || '').toString();
+                if (action === 'unlock') {
+                    setAllocationLocked(actL, false);
+                } else {
+                    var hv = getHeffValidation(actL);
+                    if (!hv.ok) {
+                        alert('Chưa thể chốt: ' + hv.message);
+                        return;
+                    }
+                    var sum = sumManualAllocatedHoursForGroup(actL, lastSearchResult.allActivities || []);
+                    if (sum !== getActivityPoolHours(actL)) {
+                        alert('Chưa thể chốt: tổng phân bổ phải bằng H_pool.');
+                        return;
+                    }
+                    setAllocationLocked(actL, true);
+                }
+                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || []);
+                return;
+            }
+            if (!t || !t.classList || !t.classList.contains('admin-allocation-assign')) return;
+            var idx = parseInt(t.getAttribute('data-activity-index'), 10);
+            if (!lastSearchResult || isNaN(idx)) return;
+            var act = lastSearchResult.activities[idx];
+            setAllocationMode(act, 'agreement');
+            setAgreementStrategy(act, 'single_assignee');
+            setAllocationAssignee(act, lastSearchResult.name || '');
+            displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || []);
+        });
         
         loadAvailableYears();
         

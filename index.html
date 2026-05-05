@@ -159,6 +159,27 @@
             logSection.scrollTop = logSection.scrollHeight;
         }
         
+        function normalizeHeaderText(text) {
+            return (text || '').toString().toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/đ/g, 'd')
+                .replace(/[^a-z0-9]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function firstExistingColumn(headerMap, keys, fallbackIndex) {
+            for (var i = 0; i < keys.length; i++) {
+                if (headerMap[keys[i]] !== undefined) return headerMap[keys[i]];
+            }
+            return fallbackIndex;
+        }
+
+        function parseFlag(value) {
+            var raw = (value || '').toString().trim().toLowerCase();
+            return raw === '1' || raw === 'x' || raw === 'yes' || raw === 'y' || raw === 'true' || raw === 'co' || raw === 'có';
+        }
+
         function calculateScore(role, A, K, H) {
             if (A === 1) return H;
             var part1 = (H * 1/3) * (1/K);
@@ -294,6 +315,26 @@
             
             var rawData = currentFileData.rawData;
             var headerRow = currentFileData.headerRow;
+            var headerCells = rawData[headerRow] || [];
+            var headerMap = {};
+            for (var h = 0; h < headerCells.length; h++) {
+                var normalizedHeader = normalizeHeaderText(headerCells[h]);
+                if (normalizedHeader && headerMap[normalizedHeader] === undefined) {
+                    headerMap[normalizedHeader] = h;
+                }
+            }
+
+            var yearCol = firstExistingColumn(headerMap, ['nam', 'year'], 1);
+            var activityTypeCol = firstExistingColumn(headerMap, ['loai hoat dong', 'nhom hoat dong'], 2);
+            var rankingCol = firstExistingColumn(headerMap, ['xep hang', 'quartile', 'ranking'], 3);
+            var hCol = firstExistingColumn(headerMap, ['gio toi da h max', 'h max', 'hmax', 'gio toi da', 'gio toida'], 4);
+            var journalCol = firstExistingColumn(headerMap, ['ten tap chi', 'tap chi'], 5);
+            var titleCol = firstExistingColumn(headerMap, ['ten cong trinh bai bao sang che de tai nghi', 'ten cong trinh', 'ten bai bao', 'ten bai', 'title'], 6);
+            var authorsCol = firstExistingColumn(headerMap, ['danh sach tac gia', 'tac gia', 'authors'], 7);
+            var firstAuthorCol = firstExistingColumn(headerMap, ['first author'], -1);
+            var correspondingCol = firstExistingColumn(headerMap, ['corresponding author'], -1);
+            var primaryOutsideCol = firstExistingColumn(headerMap, ['tac gia chinh ngoai vien'], -1);
+            var inUnitAuthorCountCol = firstExistingColumn(headerMap, ['so tac gia thuoc vien'], -1);
             
             var dataByYear = {};
             var processedCount = 0;
@@ -311,13 +352,17 @@
                     continue;
                 }
                 
-                var year = (row[1] || '').toString().trim();
-                var activityType = (row[2] || '').toString().trim();
-                var ranking = (row[3] || '').toString().trim();
-                var H = parseInt(row[4]) || 600;
-                var journal = (row[5] || '').toString().trim();
-                var title = (row[6] || '').toString().trim();
-                var authorsStr = (row[7] || '').toString().trim();
+                var year = (row[yearCol] || '').toString().trim();
+                var activityType = (row[activityTypeCol] || '').toString().trim();
+                var ranking = (row[rankingCol] || '').toString().trim();
+                var H = parseInt(row[hCol]) || 600;
+                var journal = (row[journalCol] || '').toString().trim();
+                var title = (row[titleCol] || '').toString().trim();
+                var authorsStr = (row[authorsCol] || '').toString().trim();
+                var firstAuthorName = firstAuthorCol >= 0 ? (row[firstAuthorCol] || '').toString().trim() : '';
+                var correspondingAuthorName = correspondingCol >= 0 ? (row[correspondingCol] || '').toString().trim() : '';
+                var hasPrimaryOutside = primaryOutsideCol >= 0 ? parseFlag(row[primaryOutsideCol]) : false;
+                var inUnitAuthorCountRaw = inUnitAuthorCountCol >= 0 ? parseInt(row[inUnitAuthorCountCol], 10) : NaN;
                 
                 if (!title || !authorsStr) {
                     skippedCount++;
@@ -331,7 +376,11 @@
                 var K = 1;
                 
                 if (!dataByYear[year]) {
-                    dataByYear[year] = [['Năm', 'STT', 'Loại hoạt động', 'Xếp hạng', 'Tên công trình', 'Tên tạp chí', 'Tác giả', 'Role', 'Tổng tác giả', 'H_max', 'Điểm']];
+                    dataByYear[year] = [[
+                        'Năm', 'STT', 'Loại hoạt động', 'Xếp hạng', 'Tên công trình', 'Tên tạp chí',
+                        'Tác giả', 'Role', 'Tổng tác giả', 'H_max', 'Điểm',
+                        'Tác giả chính ngoài Viện', 'Số tác giả thuộc Viện', 'First author', 'Corresponding author'
+                    ]];
                 }
                 
                 for (var j = 0; j < authorList.length; j++) {
@@ -345,7 +394,13 @@
                         role = 'last';
                     }
                     
-                    var score = calculateScore(role, A, K, H);
+                    var effectiveH = H;
+                    var inUnitCount = A;
+                    if (hasPrimaryOutside && !isNaN(inUnitAuthorCountRaw)) {
+                        inUnitCount = Math.max(0, Math.min(A, inUnitAuthorCountRaw));
+                        effectiveH = H * (inUnitCount / A);
+                    }
+                    var score = calculateScore(role, A, K, effectiveH);
                     
                     dataByYear[year].push([
                         year,
@@ -358,7 +413,11 @@
                         role,
                         A,
                         H,
-                        score
+                        score,
+                        hasPrimaryOutside ? 'true' : 'false',
+                        inUnitCount,
+                        firstAuthorName,
+                        correspondingAuthorName
                     ]);
                     processedCount++;
                 }
