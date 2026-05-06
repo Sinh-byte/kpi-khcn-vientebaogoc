@@ -182,6 +182,45 @@
             return raw === '1' || raw === 'x' || raw === 'yes' || raw === 'y' || raw === 'true' || raw === 'co' || raw === 'có';
         }
 
+        function normalizeText(value) {
+            return (value || '').toString().toLowerCase().trim().replace(/\s+/g, ' ');
+        }
+
+        function normalizeAuthorName(name) {
+            if (!name) return '';
+            return name.toString().toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/đ/g, 'd')
+                .replace(/[^a-z0-9]/g, '')
+                .trim();
+        }
+
+        function dedupSheetRows(rows) {
+            if (!rows || rows.length <= 1) return rows || [];
+            var header = rows[0];
+            var out = [header];
+            var seen = {};
+            var removed = 0;
+            for (var i = 1; i < rows.length; i++) {
+                var r = rows[i];
+                if (!r) continue;
+                var key = [
+                    normalizeText(r[2]),
+                    normalizeText(r[3]),
+                    normalizeText(r[4]),
+                    normalizeText(r[5]),
+                    parseInt(r[8], 10) || 0,
+                    parseInt(r[9], 10) || 0,
+                    normalizeAuthorName(r[6])
+                ].join('||');
+                if (seen[key]) { removed++; continue; }
+                seen[key] = true;
+                r[1] = out.length;
+                out.push(r);
+            }
+            return { rows: out, removed: removed };
+        }
+
         function calculateScore(role, A, K, H) {
             if (A === 1) return H;
             var part1 = (H * 1/3) * (1/K);
@@ -426,11 +465,25 @@
             }
             
             log('📊 Đã xử lý ' + processedCount + ' bản ghi' + (skippedCount > 0 ? ' (bỏ qua ' + skippedCount + ' dòng)' : ''), 'success');
-            log('🚀 Đang đẩy lên Google Sheets theo từng năm...', 'success');
-            
+
+            var totalRemoved = 0;
             var years = Object.keys(dataByYear);
+            for (var yi = 0; yi < years.length; yi++) {
+                var yn = years[yi];
+                var deduped = dedupSheetRows(dataByYear[yn]);
+                if (deduped.removed > 0) {
+                    log('🧹 Loại trùng sheet "' + yn + '": -' + deduped.removed + ' bản ghi', 'warning');
+                    totalRemoved += deduped.removed;
+                }
+                dataByYear[yn] = deduped.rows;
+            }
+            if (totalRemoved > 0) {
+                log('🧹 Tổng số bản ghi trùng đã loại: ' + totalRemoved, 'warning');
+            }
+            log('🚀 Đang đẩy lên Google Sheets theo từng năm...', 'success');
+
             var uploadPromises = [];
-            
+
             for (var y = 0; y < years.length; y++) {
                 var yearName = years[y];
                 var sheetData = dataByYear[yearName];

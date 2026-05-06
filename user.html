@@ -957,7 +957,7 @@
                                     });
                                 });
                             });
-                            return out;
+                            return dedupActivities(out);
                         });
                 });
         }
@@ -1390,7 +1390,7 @@
                     }
                     
                     console.log('Activities parsed:', activities.length);
-                    return activities;
+                    return dedupActivities(activities);
                 })
                 .catch(function(error) {
                     console.error('Load error:', error);
@@ -1508,6 +1508,23 @@
                 parseInt(a.H) || 600,
                 parseInt(a.totalAuthors) || 1
             ].join('||');
+        }
+
+        function dedupActivities(items) {
+            if (!items || items.length === 0) return items || [];
+            var seen = {};
+            var out = [];
+            for (var i = 0; i < items.length; i++) {
+                var it = items[i];
+                var key = getActivityGroupKey(it) + '||' + normalizeName(it.authorName || '');
+                if (seen[key]) continue;
+                seen[key] = true;
+                out.push(it);
+            }
+            if (out.length !== items.length) {
+                console.log('Dedup activities: ' + items.length + ' -> ' + out.length + ' (removed ' + (items.length - out.length) + ' duplicates)');
+            }
+            return out;
         }
 
         function buildAuthorMap(allActivities) {

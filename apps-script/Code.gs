@@ -229,6 +229,65 @@ function doGet(e) {
   })).setMimeType(ContentService.MimeType.JSON);
 }
 
+function normalizeText_(value) {
+  return String(value == null ? '' : value).toLowerCase().replace(/^\s+|\s+$/g, '').replace(/\s+/g, ' ');
+}
+
+function normalizeAuthor_(value) {
+  var s = String(value == null ? '' : value).toLowerCase();
+  s = s.normalize ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '') : s;
+  s = s.replace(/đ/g, 'd').replace(/[^a-z0-9]/g, '');
+  return s;
+}
+
+function findHeaderIndex_(header, candidates, fallback) {
+  if (!header || header.length === 0) return fallback;
+  var norm = [];
+  for (var i = 0; i < header.length; i++) {
+    norm.push(normalizeText_(header[i]).replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' '));
+  }
+  for (var c = 0; c < candidates.length; c++) {
+    var idx = norm.indexOf(candidates[c]);
+    if (idx >= 0) return idx;
+  }
+  return fallback;
+}
+
+function dedupValues_(values) {
+  if (!values || values.length <= 2) return { values: values || [], removed: 0 };
+  var header = values[0];
+  var iActivityType = findHeaderIndex_(header, ['loai hoat dong'], 2);
+  var iRanking = findHeaderIndex_(header, ['xep hang', 'quartile', 'ranking'], 3);
+  var iTitle = findHeaderIndex_(header, ['ten cong trinh', 'ten bai bao', 'title'], 4);
+  var iJournal = findHeaderIndex_(header, ['ten tap chi', 'tap chi'], 5);
+  var iAuthor = findHeaderIndex_(header, ['tac gia', 'authors'], 6);
+  var iA = findHeaderIndex_(header, ['tong tac gia', 'so tac gia'], 8);
+  var iH = findHeaderIndex_(header, ['h max', 'hmax', 'h_max', 'gio toi da'], 9);
+  var iStt = findHeaderIndex_(header, ['stt'], 1);
+
+  var out = [header];
+  var seen = {};
+  var removed = 0;
+  for (var r = 1; r < values.length; r++) {
+    var row = values[r];
+    if (!row) continue;
+    var key = [
+      normalizeText_(row[iActivityType]),
+      normalizeText_(row[iRanking]),
+      normalizeText_(row[iTitle]),
+      normalizeText_(row[iJournal]),
+      parseInt(row[iA], 10) || 0,
+      parseInt(row[iH], 10) || 0,
+      normalizeAuthor_(row[iAuthor])
+    ].join('||');
+    if (seen[key]) { removed++; continue; }
+    seen[key] = true;
+    if (iStt >= 0) row[iStt] = out.length;
+    out.push(row);
+  }
+  return { values: out, removed: removed };
+}
+
 function doPost(e) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
 
@@ -243,13 +302,16 @@ function doPost(e) {
         sheet = ss.insertSheet(sheetName);
       }
 
+      var dedupResult = dedupValues_(data.values);
+      var values = dedupResult.values;
+
       sheet.clear();
-      var values = data.values;
       sheet.getRange(1, 1, values.length, values[0].length).setValues(values);
 
       return ContentService.createTextOutput(JSON.stringify({
         success: true,
         rows: values.length,
+        rowsRemovedAsDuplicates: dedupResult.removed,
         sheetName: sheetName
       })).setMimeType(ContentService.MimeType.JSON);
     }
