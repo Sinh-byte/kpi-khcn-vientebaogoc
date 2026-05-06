@@ -1859,11 +1859,17 @@
             var rateInput = document.getElementById('kpiSurplusRateInput');
             var rateSummary = document.getElementById('kpiRateSummaryText');
             if (!surEl || !bonEl || !lastSearchResult) return;
-            var all = lastSearchResult.allActivities || [];
-            var sum = 0;
-            lastSearchResult.activities.forEach(function(a, i) {
-                sum += computeFinalScoreHours(a, all, kOverridesByIndex[i]);
-            });
+            var sum = (lastSearchResult.totalScoreHours !== undefined && lastSearchResult.totalScoreHours !== null)
+                ? Number(lastSearchResult.totalScoreHours)
+                : null;
+            if (!isFinite(sum)) {
+                var all = lastSearchResult.allActivities || [];
+                sum = 0;
+                lastSearchResult.activities.forEach(function(a, i) {
+                    sum += computeFinalScoreHours(a, all, kOverridesByIndex[i]);
+                });
+                lastSearchResult.totalScoreHours = sum;
+            }
             var year = lastSearchResult.year || '';
             var pack = computeKpiSurplusPack(sum, year);
             var surDisp = Math.round(pack.surplus * 100) / 100;
@@ -1897,7 +1903,8 @@
             lastSearchResult.activities.forEach(function(a, i) {
                 sum += computeFinalScoreHours(a, all, kOverridesByIndex[i]);
             });
-            document.getElementById('totalScore').textContent = sum.toLocaleString() + ' giờ';
+            lastSearchResult.totalScoreHours = sum;
+            document.getElementById('totalScore').textContent = sum.toLocaleString('vi-VN') + ' giờ';
             updateKpiSurplusSummary();
         }
 
@@ -2305,7 +2312,7 @@
             var totalScore = activities.reduce(function(sum, a, i) {
                 return sum + computeFinalScoreHours(a, allActivities, kOverridesByIndex[i]);
             }, 0);
-            document.getElementById('totalScore').textContent = totalScore.toLocaleString() + ' giờ';
+            document.getElementById('totalScore').textContent = totalScore.toLocaleString('vi-VN') + ' giờ';
             updateAdminSessionBar();
             document.getElementById('activityCount').textContent = activities.length + ' hoạt động';
             var authorMap = buildAuthorMap(allActivities);
@@ -2314,7 +2321,8 @@
                 year: year,
                 activities: activities,
                 allActivities: allActivities,
-                kOverridesByIndex: kOverridesByIndex
+                kOverridesByIndex: kOverridesByIndex,
+                totalScoreHours: totalScore
             };
             updateKpiSurplusSummary();
             
