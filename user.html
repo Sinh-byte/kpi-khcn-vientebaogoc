@@ -31,6 +31,32 @@
         .total-score h2 { font-size: 1.02em; opacity: 0.92; margin-bottom: 4px; }
         .total-score .score { font-size: 2.35em; font-weight: bold; line-height: 1.1; }
         .total-score .count { font-size: 0.92em; opacity: 0.95; margin-top: 2px; }
+        .total-score .kpi-surplus-wrap { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.35); text-align: left; font-size: 0.88em; line-height: 1.45; opacity: 0.98; }
+        .total-score .kpi-surplus-wrap .kpi-cite { font-size: 0.82em; opacity: 0.9; margin-top: 4px; }
+        .total-score .kpi-surplus-wrap label { display: block; font-weight: 600; margin-top: 8px; }
+        .total-score .kpi-surplus-wrap input[type="number"] { width: 100%; max-width: 220px; margin-top: 4px; padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.55); font-size: 0.95em; color: #1a202c; }
+        .kpi-bonus-highlight {
+            margin-top: 12px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #fef08a 0%, #facc15 45%, #eab308 100%);
+            color: #422006;
+            font-weight: 700;
+            font-size: 1.02em;
+            line-height: 1.35;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+            border: 2px solid rgba(255, 255, 255, 0.55);
+            text-align: center;
+        }
+        .kpi-bonus-highlight #kpiBonusVnd {
+            display: inline-block;
+            margin-top: 4px;
+            font-size: 1.35em;
+            font-weight: 800;
+            color: #7c2d12;
+            letter-spacing: 0.02em;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+        }
         .activities { max-height: 620px; overflow-y: auto; }
         .activity-card { background: #f7fafc; border-left: 4px solid #4c51bf; padding: 20px; margin-bottom: 15px; border-radius: 10px; transition: all 0.3s; }
         .activity-card:hover { box-shadow: 0 5px 15px rgba(0,0,0,0.1); transform: translateX(5px); }
@@ -153,6 +179,7 @@
         </div>
 
         <div id="resultView" class="hidden result">
+            <div class="site-orgline">Viện Tế bào gốc - Trường ĐHKHTN, ĐHQG TP.HCM</div>
             <h1>👤 Thông tin KPI</h1>
             <p class="subtitle" id="userName"></p>
             <div id="adminSessionBar" class="admin-session-bar hidden">Bạn đang dùng chế độ quản trị: có thể đánh dấu hoạt động / tác giả không nhận điểm (lưu trên trình duyệt này).</div>
@@ -160,6 +187,20 @@
                 <h2>Tổng điểm KPI</h2>
                 <div class="score" id="totalScore">0 giờ</div>
                 <div class="count" id="activityCount">0 hoạt động</div>
+                <div class="kpi-surplus-wrap">
+                    <div><strong>Định mức KPI bắt buộc:</strong> <span id="kpiMandatoryHours">1760</span> giờ</div>
+                    <div class="kpi-cite" id="kpiMandatoryCitation">Căn cứ Quyết định số 1226/QĐ-KHTN ngày 07/6/2024 của Hiệu trưởng Trường ĐH KHTN, ĐHQG-HCM; Bảng 1 (định mức thời gian làm việc) — cột Tổng <strong>1760</strong> giờ hành chính theo từng chức danh.</div>
+                    <div style="margin-top:8px;"><strong>Điểm KPI vượt:</strong> <span id="kpiSurplusHours">0</span> giờ</div>
+                    <div style="margin-top:6px;"><strong>Đơn giá thưởng KPI vượt:</strong> <span id="kpiRateSummaryText">—</span></div>
+                    <div id="kpiBonusAdminWrap" class="hidden">
+                        <label for="kpiSurplusRateInput">Đơn giá thưởng KPI vượt (VND / 1 giờ vượt) — admin (các năm khác năm 2025):</label>
+                        <input type="number" id="kpiSurplusRateInput" min="0" step="1000" placeholder="Ví dụ: 50000" />
+                    </div>
+                    <div class="kpi-bonus-highlight">
+                        <div>Số tiền thưởng KPI vượt (VND)</div>
+                        <div id="kpiBonusVnd">—</div>
+                    </div>
+                </div>
             </div>
             <h3 style="margin-bottom: 20px; color: #2d3748;">📋 Chi tiết các hoạt động:</h3>
             <div class="activities" id="activitiesList"></div>
@@ -195,7 +236,7 @@
     </div>
 
     <div id="helpSidebar" class="help-sidebar hidden">
-        <div class="hs-title">📌 Phụ lục 2 — Quy đổi giờ NCKH (QĐ 1296/QĐ-KHTN ngày 01/06/2024)</div>
+        <div class="hs-title">📌 Phụ lục 2 — Quy đổi giờ NCKH (QĐ 1226/QĐ-KHTN ngày 07/06/2024)</div>
         <ul>
             <li><strong>Cách xác định “tác giả chính”</strong>: với ấn phẩm/sản phẩm khoa học do tập thể biên soạn/thực hiện, tác giả chính được xác định là <strong>chủ biên/chủ công trình</strong>, hoặc các tác giả có vai trò <strong>First Author</strong>, <strong>Corresponding Author</strong>, <strong>Last Author</strong>.</li>
             <li><strong>Quy đổi giờ theo tác giả thuộc Trường</strong>:
@@ -1611,6 +1652,18 @@
             return H * (inUnitCount / A);
         }
 
+        /**
+         * Mẫu số cho phần (2/3)×H trong Cách 2 (tự động): thường là A (tổng tác giả).
+         * Khi đánh dấu tác giả chính ngoài Viện: H đã quy về H_eff theo tỉ lệ n/A; phần 2/3 của H_eff
+         * được chia trong nhóm tác giả thuộc Trường (n), không lấy A làm mẫu số (tránh “chia đôi” với tác giả ngoài không nhận KPI Trường).
+         */
+        function getMethod2SplitDenominator(activity) {
+            var A = parseInt(activity.totalAuthors) || 1;
+            if (!getPrimaryOutsideForActivity(activity)) return A;
+            var nIn = getInUnitAuthorCountForActivity(activity);
+            return Math.max(0, Math.min(A, parseInt(nIn, 10) || 0));
+        }
+
         function getEffectiveHoursNote(activity) {
             var H = parseInt(activity.H) || 600;
             var noteParts = [];
@@ -1649,13 +1702,15 @@
             var H = getEffectiveHours(activity);
             var A = parseInt(activity.totalAuthors) || 1;
             var K = getKForActivity(activity, allActivities, kOverride);
+            var split2 = getMethod2SplitDenominator(activity);
+            if (getPrimaryOutsideForActivity(activity) && split2 === 0) return 0;
             if (A === 1) return Math.round(H);
             if (isEffectivePrimary(activity)) {
                 var part1 = Math.round((H * 1 / 3) * (1 / K));
-                var part2 = Math.round((H * 2 / 3) * (1 / A));
+                var part2 = Math.round((H * 2 / 3) * (1 / split2));
                 return part1 + part2;
             }
-            return Math.round((H * 2 / 3) * (1 / A));
+            return Math.round((H * 2 / 3) * (1 / split2));
         }
 
         function getScoreFormulaKNote(activity, allActivities, kOverride) {
@@ -1681,18 +1736,20 @@
             var HText = formatHours(H);
             var A = parseInt(activity.totalAuthors) || 1;
             var K = getKForActivity(activity, allActivities, kOverride);
+            var split2 = getMethod2SplitDenominator(activity);
+            var split2Label = getPrimaryOutsideForActivity(activity) ? ('n=' + split2 + ' (TG thuộc Trường)') : String(A);
             if (A === 1) {
                 return 'Tác giả duy nhất: ' + HText + 'h';
             }
             if (isEffectivePrimary(activity)) {
                 var part1 = Math.round((H * 1 / 3) * (1 / K));
-                var part2 = Math.round((H * 2 / 3) * (1 / A));
+                var part2 = split2 > 0 ? Math.round((H * 2 / 3) * (1 / split2)) : 0;
                 return 'Vai trò chính: (1/3 x ' + HText + ') x (1/' + K + ') = ' + part1 + 'h; ' +
-                       'Nhóm tác giả: (2/3 x ' + HText + ') x (1/' + A + ') = ' + part2 + 'h; ' +
+                       'Nhóm tác giả: (2/3 x ' + HText + ') x (1/' + split2Label + ') = ' + part2 + 'h; ' +
                        'Tổng: ' + (part1 + part2) + 'h';
             }
-            var partCoAuthor = Math.round((H * 2 / 3) * (1 / A));
-            return 'Đồng tác giả: (2/3 x ' + HText + ') x (1/' + A + ') = ' + partCoAuthor + 'h';
+            var partCoAuthor = split2 > 0 ? Math.round((H * 2 / 3) * (1 / split2)) : 0;
+            return 'Đồng tác giả: (2/3 x ' + HText + ') x (1/' + split2Label + ') = ' + partCoAuthor + 'h';
         }
 
         function getDisplayFormulaHtml(activity, allActivities, kOverride) {
@@ -1704,6 +1761,8 @@
             var HText = formatHours(H);
             var A = parseInt(activity.totalAuthors) || 1;
             var K = getKForActivity(activity, allActivities, kOverride);
+            var split2 = getMethod2SplitDenominator(activity);
+            var split2Label = getPrimaryOutsideForActivity(activity) ? ('n=' + split2 + ' (TG thuộc Trường)') : String(A);
             var kNote = getScoreFormulaKNote(activity, allActivities, kOverride);
             var consNote = getConsensusFormulaNote(activity, allActivities, kOverride);
             var hNote = getEffectiveHoursNote(activity);
@@ -1722,21 +1781,96 @@
                 inner = 'Tác giả duy nhất: ' + HText + 'h' + hNoteHtml;
             } else if (isEffectivePrimary(activity)) {
                 var part1 = Math.round((H * 1 / 3) * (1 / K));
-                var part2 = Math.round((H * 2 / 3) * (1 / A));
+                var part2 = split2 > 0 ? Math.round((H * 2 / 3) * (1 / split2)) : 0;
                 inner = '<strong>Tác giả chính thuộc Viện:</strong><br/>' +
                        'Phần vai trò chính: (1/3 × ' + HText + ') × (1/' + K + ') = ' + part1 + 'h<br/>' +
-                       'Phần chia theo nhóm tác giả: (2/3 × ' + HText + ') × (1/' + A + ') = ' + part2 + 'h<br/>' +
+                       'Phần chia theo nhóm tác giả: (2/3 × ' + HText + ') × (1/' + split2Label + ') = ' + part2 + 'h<br/>' +
                        '<strong>Tổng: ' + (part1 + part2) + 'h</strong>' +
                        hNoteHtml +
                        noteHtml +
                        consNoteHtml;
             } else {
-                var part2c = Math.round((H * 2 / 3) * (1 / A));
+                var part2c = split2 > 0 ? Math.round((H * 2 / 3) * (1 / split2)) : 0;
                 inner = '<strong>Đồng tác giả thuộc Viện:</strong><br/>' +
-                   'Phần chia theo nhóm tác giả: (2/3 × ' + HText + ') × (1/' + A + ') = ' + part2c + 'h' +
+                   'Phần chia theo nhóm tác giả: (2/3 × ' + HText + ') × (1/' + split2Label + ') = ' + part2c + 'h' +
                    hNoteHtml;
             }
             return banner + mutedOpen + inner + mutedClose;
+        }
+
+        /** Định mức giờ làm việc hành chính bắt buộc (Bảng 1, cột Tổng) theo QĐ Trường. */
+        var MANDATORY_KPI_WORK_HOURS = 1760;
+        var MANDATORY_KPI_QD_NUMBER = '1226/QĐ-KHTN';
+        var MANDATORY_KPI_QD_DATE = '07/6/2024';
+
+        function lsKeySurplusVndPerHour(year) {
+            return LS_ADMIN_PREFIX + 'surplus_vnd_hour:' + String(year || '');
+        }
+
+        /** Năm 2025: đơn giá cố định 10.000 VND / 1 giờ KPI vượt. Các năm khác: admin nhập (localStorage). */
+        var SURPLUS_VND_PER_HOUR_FIXED_2025 = 10000;
+
+        function normalizeLookupYear(year) {
+            var n = parseInt(String(year == null ? '' : year).replace(/[^\d]/g, ''), 10);
+            return isNaN(n) ? null : n;
+        }
+
+        function isSurplusRateFixedYear(year) {
+            return normalizeLookupYear(year) === 2025;
+        }
+
+        function getSurplusVndPerHourForYear(year) {
+            if (isSurplusRateFixedYear(year)) return SURPLUS_VND_PER_HOUR_FIXED_2025;
+            var raw = localStorage.getItem(lsKeySurplusVndPerHour(year));
+            var n = parseFloat(raw);
+            if (!isFinite(n) || n < 0) return 0;
+            return n;
+        }
+
+        function computeKpiSurplusPack(totalScoreHours, year) {
+            var mandatory = MANDATORY_KPI_WORK_HOURS;
+            var surplus = Number(totalScoreHours) - mandatory;
+            var rate = getSurplusVndPerHourForYear(year);
+            var bonusVnd = rate > 0 ? Math.round(surplus * rate) : null;
+            return { mandatory: mandatory, surplus: surplus, rate: rate, bonusVnd: bonusVnd };
+        }
+
+        function updateKpiSurplusSummary() {
+            var surEl = document.getElementById('kpiSurplusHours');
+            var bonEl = document.getElementById('kpiBonusVnd');
+            var adminWrap = document.getElementById('kpiBonusAdminWrap');
+            var rateInput = document.getElementById('kpiSurplusRateInput');
+            var rateSummary = document.getElementById('kpiRateSummaryText');
+            if (!surEl || !bonEl || !lastSearchResult) return;
+            var all = lastSearchResult.allActivities || [];
+            var sum = 0;
+            lastSearchResult.activities.forEach(function(a, i) {
+                sum += computeFinalScoreHours(a, all, kOverridesByIndex[i]);
+            });
+            var year = lastSearchResult.year || '';
+            var pack = computeKpiSurplusPack(sum, year);
+            var surDisp = Math.round(pack.surplus * 100) / 100;
+            surEl.textContent = surDisp.toLocaleString('vi-VN');
+            var fixedY = isSurplusRateFixedYear(year);
+            if (rateSummary) {
+                if (fixedY) {
+                    rateSummary.textContent = SURPLUS_VND_PER_HOUR_FIXED_2025.toLocaleString('vi-VN') + ' VND/giờ vượt (cố định năm 2025)';
+                } else if (pack.rate > 0) {
+                    rateSummary.textContent = pack.rate.toLocaleString('vi-VN') + ' VND/giờ vượt';
+                } else {
+                    rateSummary.textContent = isAdminSession() ? '— (admin nhập đơn giá cho năm này)' : '—';
+                }
+            }
+            if (adminWrap) adminWrap.classList.toggle('hidden', !isAdminSession() || fixedY);
+            if (rateInput && isAdminSession() && !fixedY) {
+                var lsOnly = getSurplusVndPerHourForYear(year);
+                rateInput.value = lsOnly > 0 ? String(lsOnly) : '';
+            }
+            if (pack.bonusVnd != null && pack.rate > 0) {
+                bonEl.textContent = pack.bonusVnd.toLocaleString('vi-VN');
+            } else {
+                bonEl.textContent = isAdminSession() && !fixedY ? '— (nhập đơn giá)' : '—';
+            }
         }
 
         function updateTotalKpiScoreFromComputed() {
@@ -1747,6 +1881,7 @@
                 sum += computeFinalScoreHours(a, all, kOverridesByIndex[i]);
             });
             document.getElementById('totalScore').textContent = sum.toLocaleString() + ' giờ';
+            updateKpiSurplusSummary();
         }
 
         function refreshActivityCardKUI(cardIndex, skipTotalUpdate) {
@@ -1807,6 +1942,7 @@
             var totalScore = activities.reduce(function(sum, a, idx) {
                 return sum + computeFinalScoreHours(a, allActivities, kMap[idx]);
             }, 0);
+            var surplusPack = computeKpiSurplusPack(totalScore, year);
             var roleNames = { first: 'Tác giả chính', corresponding: 'Tác giả liên hệ', last: 'Tác giả cuối', coauthor: 'Đồng tác giả' };
             var d = window.docx;
             var now = new Date();
@@ -2055,6 +2191,56 @@
                             rows: tableRows,
                             width: { size: 100, type: d.WidthType.PERCENTAGE }
                         }),
+                        new d.Paragraph({ text: 'II. Định mức KPI bắt buộc và thưởng KPI vượt', heading: d.HeadingLevel.HEADING_2 }),
+                        new d.Paragraph({
+                            spacing: { after: 80 },
+                            children: [
+                                new d.TextRun({ text: 'Định mức KPI bắt buộc: ', bold: true, size: 22 }),
+                                new d.TextRun({ text: String(surplusPack.mandatory) + ' giờ (giờ hành chính theo Bảng 1). ', size: 22 }),
+                                new d.TextRun({
+                                    text: 'Căn cứ Quyết định số ' + MANDATORY_KPI_QD_NUMBER + ' ngày ' + MANDATORY_KPI_QD_DATE + ' của Hiệu trưởng Trường Đại học Khoa học Tự nhiên, ĐHQG-HCM về việc ban hành Quy định chế độ làm việc; Bảng 1 — cột Tổng 1760 giờ theo từng chức danh.',
+                                    size: 22,
+                                    italics: true,
+                                    color: '444444'
+                                })
+                            ]
+                        }),
+                        new d.Paragraph({
+                            spacing: { after: 60 },
+                            children: [
+                                new d.TextRun({ text: 'Tổng điểm KPI (giờ): ', bold: true, size: 22 }),
+                                new d.TextRun({ text: totalScore.toLocaleString('vi-VN'), size: 22 })
+                            ]
+                        }),
+                        new d.Paragraph({
+                            spacing: { after: 60 },
+                            children: [
+                                new d.TextRun({ text: 'Điểm KPI vượt (giờ): ', bold: true, size: 22 }),
+                                new d.TextRun({ text: (Math.round(surplusPack.surplus * 100) / 100).toLocaleString('vi-VN') + ' (= Tổng điểm KPI − Định mức; có thể âm).', size: 22 })
+                            ]
+                        }),
+                        new d.Paragraph({
+                            spacing: { after: 60 },
+                            children: [
+                                new d.TextRun({ text: 'Đơn giá thưởng KPI vượt (VND/giờ vượt): ', bold: true, size: 22 }),
+                                new d.TextRun({
+                                    text: surplusPack.rate > 0
+                                        ? (surplusPack.rate.toLocaleString('vi-VN') + (normalizeLookupYear(year) === 2025 ? ' (cố định năm 2025)' : ''))
+                                        : '(chưa nhập — chỉ admin cấu hình trên trang tra cứu, trừ năm 2025)',
+                                    size: 22
+                                })
+                            ]
+                        }),
+                        new d.Paragraph({
+                            spacing: { after: 120 },
+                            children: [
+                                new d.TextRun({ text: 'Số tiền thưởng KPI vượt (VND): ', bold: true, size: 22 }),
+                                new d.TextRun({
+                                    text: surplusPack.bonusVnd != null ? surplusPack.bonusVnd.toLocaleString('vi-VN') : '—',
+                                    size: 22
+                                })
+                            ]
+                        }),
                         new d.Paragraph(''),
                         new d.Paragraph({
                             alignment: d.AlignmentType.CENTER,
@@ -2113,6 +2299,7 @@
                 allActivities: allActivities,
                 kOverridesByIndex: kOverridesByIndex
             };
+            updateKpiSurplusSummary();
             
             var listHTML = activities.map(function(a, idx) {
                 var roleNames = { first: 'Tác giả chính', corresponding: 'Tác giả liên hệ', last: 'Tác giả cuối', coauthor: 'Đồng tác giả' };
@@ -2494,6 +2681,19 @@
         document.getElementById('searchBtn').addEventListener('click', searchKPI);
         document.getElementById('backBtn').addEventListener('click', goBack);
         document.getElementById('exportWordBtn').addEventListener('click', exportToWord);
+        document.getElementById('resultView').addEventListener('input', function(e) {
+            if (!e.target || e.target.id !== 'kpiSurplusRateInput') return;
+            if (!isAdminSession() || !lastSearchResult) return;
+            if (isSurplusRateFixedYear(lastSearchResult.year)) return;
+            var y = lastSearchResult.year;
+            var v = parseFloat(e.target.value);
+            if (!isFinite(v) || v <= 0) {
+                localStorage.removeItem(lsKeySurplusVndPerHour(y));
+            } else {
+                localStorage.setItem(lsKeySurplusVndPerHour(y), String(v));
+            }
+            updateKpiSurplusSummary();
+        });
         document.getElementById('saveSnapshotBtn').addEventListener('click', saveAdminSnapshot);
         document.getElementById('openSnapshotsBtn').addEventListener('click', openSnapshotsModal);
         document.getElementById('closeSnapshotsBtn').addEventListener('click', closeSnapshotsModal);
