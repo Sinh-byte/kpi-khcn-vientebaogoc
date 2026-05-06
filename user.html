@@ -182,6 +182,7 @@
             <div class="site-orgline">Viện Tế bào gốc - Trường ĐHKHTN, ĐHQG TP.HCM</div>
             <h1>👤 Thông tin KPI</h1>
             <p class="subtitle" id="userName"></p>
+            <p id="pinnedSnapshotNotice" class="hidden" style="margin:8px 0 0;padding:10px 12px;background:#fffaf0;border:1px solid #f6e05e;border-radius:8px;color:#744210;font-size:0.92em;line-height:1.45;"></p>
             <div id="adminSessionBar" class="admin-session-bar hidden">Bạn đang dùng chế độ quản trị: có thể đánh dấu hoạt động / tác giả không nhận điểm (lưu trên trình duyệt này).</div>
             <div class="total-score">
                 <h2>Tổng điểm KPI</h2>
@@ -281,7 +282,11 @@
         var SUPABASE_ACTIVITIES_TABLE = 'activities';
         var SUPABASE_ACTIVITY_AUTHORS_TABLE = 'activity_authors';
         var SUPABASE_SNAPSHOTS_TABLE = 'kpi_search_snapshots';
+        var SUPABASE_AGREEMENTS_BUCKET = 'kpi-agreements';
         var cloudConfig = { invalidByGroup: {}, authorByRow: {}, allocationByGroup: {} };
+        /** Sao chép cloudConfig trước khi áp bản chốt snapshot (để goBack khôi phục). */
+        var cloudConfigBackupForPinned = null;
+        var appSettings = { userAllocationEnabled: false };
         var cachedData = {};
         var availableYears = [];
         var lastSearchResult = null;
@@ -830,6 +835,120 @@
             return fetch(url, Object.assign({}, options || {}, { headers: headers }));
         }
 
+        function getSupabaseStorageObjectUrl_(bucket, objectPath) {
+            return SUPABASE_URL.replace(/\/+$/, '') + '/storage/v1/object/' + bucket + '/' + objectPath;
+        }
+
+        function fnv1a32_(s) {
+            var str = String(s == null ? '' : s);
+            var h = 0x811c9dc5;
+            for (var i = 0; i < str.length; i++) {
+                h ^= str.charCodeAt(i);
+                // 32-bit FNV-1a
+                h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+            }
+            return ('00000000' + h.toString(16)).slice(-8);
+        }
+
+        function lsKeyAgreementPdf_(yearStr, activity) {
+            var y = String(yearStr || (activity && activity.year) || (lastSearchResult && lastSearchResult.year) || '').trim();
+            var gk = activity ? getActivityGroupKey(activity) : '';
+            var who = lastSearchResult && lastSearchResult.name ? normalizeName(lastSearchResult.name) : '';
+            return LS_ADMIN_PREFIX + 'agpdf:' + encodeURIComponent([y, fnv1a32_(gk), who].join('||'));
+        }
+
+        function getAgreementPdfInfo_(yearStr, activity) {
+            try {
+                var raw = localStorage.getItem(lsKeyAgreementPdf_(yearStr, activity));
+                return raw ? JSON.parse(raw) : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function hasAgreementPdfUploaded_(yearStr, activity) {
+            var info = getAgreementPdfInfo_(yearStr, activity);
+            return !!(info && info.path && info.uploadedAt);
+        }
+
+        function buildAgreementPdfObjectPath_(yearStr, activity) {
+            var y = String(yearStr || (activity && activity.year) || (lastSearchResult && lastSearchResult.year) || '').trim() || 'unknown';
+            var gk = activity ? getActivityGroupKey(activity) : '';
+            var who = lastSearchResult && lastSearchResult.name ? normalizeName(lastSearchResult.name) : '';
+            // path ngắn + ổn định, tránh groupKey quá dài
+            return 'agreements/' + encodeURIComponent(y) + '/' + fnv1a32_(gk) + '/' + encodeURIComponent(who || 'unknown') + '.pdf';
+        }
+
+        function uploadAgreementPdfToSupabase_(yearStr, activity, file) {
+            if (!isSupabaseKpiConfigReady()) return Promise.reject(new Error('supabase_not_ready'));
+            if (!file) return Promise.reject(new Error('missing_file'));
+            if (String(file.type || '').toLowerCase() !== 'application/pdf' && !/\.pdf$/i.test(String(file.name || ''))) {
+                return Promise.reject(new Error('invalid_file_type'));
+            }
+            var objectPath = buildAgreementPdfObjectPath_(yearStr, activity);
+            var url = getSupabaseStorageObjectUrl_(SUPABASE_AGREEMENTS_BUCKET, objectPath);
+            return supabaseRequest(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/pdf',
+                    'x-upsert': 'true'
+                },
+                body: file
+            }).then(function(r) {
+                if (!r.ok) throw new Error('upload_failed_' + r.status);
+                var info = { bucket: SUPABASE_AGREEMENTS_BUCKET, path: objectPath, filename: file.name || 'agreement.pdf', uploadedAt: new Date().toISOString() };
+                localStorage.setItem(lsKeyAgreementPdf_(yearStr, activity), JSON.stringify(info));
+                return info;
+            });
+        }
+
+        function fetchAppSettings_() {
+            var url = SCRIPT_URL + '?action=getAppSettings';
+            if (KPI_CONFIG_TOKEN) url += '&token=' + encodeURIComponent(KPI_CONFIG_TOKEN);
+            return jsonpRequest_(url)
+                .then(function(data) {
+                    var s = (data && data.settings) ? data.settings : {};
+                    var v = s.userAllocationEnabled;
+                    appSettings.userAllocationEnabled = (v === true || v === 'true' || v === 1 || v === '1');
+                    return appSettings;
+                })
+                .catch(function() { return appSettings; });
+        }
+
+        function jsonpRequest_(url) {
+            return new Promise(function(resolve, reject) {
+                var cbName = '__cb_' + Math.random().toString(36).slice(2) + '_' + Date.now();
+                var sep = url.indexOf('?') >= 0 ? '&' : '?';
+                var full = url + sep + 'callback=' + encodeURIComponent(cbName);
+                var script = document.createElement('script');
+                var done = false;
+                window[cbName] = function(data) {
+                    done = true;
+                    try { resolve(data); } finally { cleanup(); }
+                };
+                function cleanup() {
+                    try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+                    if (script && script.parentNode) script.parentNode.removeChild(script);
+                }
+                script.onerror = function() {
+                    if (done) return;
+                    cleanup();
+                    reject(new Error('jsonp_failed'));
+                };
+                script.src = full;
+                document.head.appendChild(script);
+                setTimeout(function() {
+                    if (done) return;
+                    cleanup();
+                    reject(new Error('jsonp_timeout'));
+                }, 15000);
+            });
+        }
+
+        function canUserEditAllocationUi_() {
+            return isAdminSession() || !!(appSettings && appSettings.userAllocationEnabled);
+        }
+
         function mapSupabaseRowsToCloudConfig(rows) {
             var out = { invalidByGroup: {}, authorByRow: {}, allocationByGroup: {} };
             (rows || []).forEach(function(row) {
@@ -1092,6 +1211,89 @@
             }).then(function(r) { return r.ok; }).catch(function() { return false; });
         }
 
+        function cloneJsonSafe_(obj) {
+            try {
+                return JSON.parse(JSON.stringify(obj == null ? {} : obj));
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function backupCloudConfigForPinnedView() {
+            if (cloudConfigBackupForPinned) return;
+            cloudConfigBackupForPinned = {
+                invalidByGroup: Object.assign({}, cloudConfig.invalidByGroup || {}),
+                authorByRow: Object.assign({}, cloudConfig.authorByRow || {}),
+                allocationByGroup: Object.assign({}, cloudConfig.allocationByGroup || {})
+            };
+        }
+
+        function restoreCloudConfigAfterPinnedView() {
+            if (!cloudConfigBackupForPinned) return;
+            cloudConfig.invalidByGroup = Object.assign({}, cloudConfigBackupForPinned.invalidByGroup || {});
+            cloudConfig.authorByRow = Object.assign({}, cloudConfigBackupForPinned.authorByRow || {});
+            cloudConfig.allocationByGroup = Object.assign({}, cloudConfigBackupForPinned.allocationByGroup || {});
+            cloudConfigBackupForPinned = null;
+        }
+
+        function applyFrozenConfigFromSnapshotPayload(payload) {
+            var f = payload && payload.frozenCloudConfigSnapshot;
+            if (!f) return;
+            cloudConfig.invalidByGroup = Object.assign({}, f.invalidByGroup || {});
+            cloudConfig.authorByRow = Object.assign({}, f.authorByRow || {});
+            cloudConfig.allocationByGroup = Object.assign({}, f.allocationByGroup || {});
+        }
+
+        /** Một (năm + cá nhân) = một id cố định → lưu Supabase ghi đè bản cũ (upsert). */
+        function getSnapshotStorageId(yearStr, displayName) {
+            var y = (yearStr || '').toString().trim() || 'unknown';
+            var n = normalizeName((displayName || '').toString()) || 'unknown';
+            return 'snap_' + y + '_' + n;
+        }
+
+        function fetchLatestPinnedSnapshotForSearch(yearStr, nameInput) {
+            if (!isSupabaseKpiConfigReady()) return Promise.resolve(null);
+            var y = (yearStr || '').toString().trim();
+            if (!y || !nameInput) return Promise.resolve(null);
+            var base = getSupabaseRestTableUrl(SUPABASE_SNAPSHOTS_TABLE);
+            var sel = '?select=id,created_at,year,researcher_name,activity_count,total_score,payload';
+            var stableId = getSnapshotStorageId(y, nameInput);
+
+            function rowToPin(row) {
+                if (!row || !row.payload) return null;
+                var p = row.payload;
+                if (!p.activities || !Array.isArray(p.activities) || p.activities.length === 0) return null;
+                return { id: row.id, created_at: row.created_at, payload: p };
+            }
+
+            function scanLegacy(rows) {
+                var list = rows || [];
+                for (var i = 0; i < list.length; i++) {
+                    var row = list[i];
+                    if (!row || !row.payload) continue;
+                    var nm = (row.researcher_name || row.payload.name || '').toString();
+                    if (!isSamePerson(nm, nameInput)) continue;
+                    var pin = rowToPin(row);
+                    if (pin) return pin;
+                }
+                return null;
+            }
+
+            return supabaseRequest(base + sel + '&id=eq.' + encodeURIComponent(stableId), { method: 'GET' })
+                .then(function(r) { return r.ok ? r.json() : []; })
+                .then(function(rows) {
+                    if (rows && rows[0]) {
+                        var pin = rowToPin(rows[0]);
+                        if (pin) return pin;
+                    }
+                    return supabaseRequest(
+                        base + sel + '&year=eq.' + encodeURIComponent(y) + '&order=created_at.desc&limit=120',
+                        { method: 'GET' }
+                    ).then(function(r2) { return r2.ok ? r2.json() : []; }).then(scanLegacy);
+                })
+                .catch(function() { return null; });
+        }
+
         function pushInvalidToCloud(activity, value) {
             if (!KPI_CONFIG_CLOUD_ENABLED) return;
             var year = ((activity.year || (lastSearchResult && lastSearchResult.year)) || '').toString();
@@ -1142,6 +1344,7 @@
 
         function fetchCloudConfigAndMerge(year) {
             if (!KPI_CONFIG_CLOUD_ENABLED || !year) return;
+            if (lastSearchResult && lastSearchResult.isPinnedFromSnapshot) return;
             fetchCloudConfigFromSupabase(year)
                 .catch(function() { return null; })
                 .then(function(data) {
@@ -1431,28 +1634,46 @@
             searchBtn.textContent = '⏳ Đang tìm kiếm...';
             loadingMsg.classList.remove('hidden');
             errorMsg.classList.add('hidden');
-            
-            if (cachedData[selectedYear]) {
-                console.log('Using cached data for year:', selectedYear);
-                processSearch(nameInput, cachedData[selectedYear], selectedYear);
-                return;
-            }
-            
-            console.log('Loading fresh data for year:', selectedYear);
-            loadFromGoogleSheets(selectedYear)
-                .then(function(activities) {
-                    console.log('Loaded activities:', activities.length);
-                    cachedData[selectedYear] = activities;
+
+            function runSheetSearch() {
+                if (cachedData[selectedYear]) {
+                    console.log('Using cached data for year:', selectedYear);
                     processSearch(nameInput, cachedData[selectedYear], selectedYear);
-                })
-                .catch(function(error) {
-                    console.error('Search error:', error);
-                    loadingMsg.classList.add('hidden');
-                    errorMsg.textContent = '❌ Lỗi: ' + error.message;
-                    errorMsg.classList.remove('hidden');
-                    searchBtn.disabled = false;
-                    searchBtn.textContent = '🔎 Xem điểm KPI của tôi';
-                });
+                    return;
+                }
+                console.log('Loading fresh data for year:', selectedYear);
+                loadFromGoogleSheets(selectedYear)
+                    .then(function(activities) {
+                        console.log('Loaded activities:', activities.length);
+                        cachedData[selectedYear] = activities;
+                        processSearch(nameInput, cachedData[selectedYear], selectedYear);
+                    })
+                    .catch(function(error) {
+                        console.error('Search error:', error);
+                        loadingMsg.classList.add('hidden');
+                        errorMsg.textContent = '❌ Lỗi: ' + error.message;
+                        errorMsg.classList.remove('hidden');
+                        searchBtn.disabled = false;
+                        searchBtn.textContent = '🔎 Xem điểm KPI của tôi';
+                    });
+            }
+
+            if (isSupabaseKpiConfigReady()) {
+                fetchLatestPinnedSnapshotForSearch(selectedYear, nameInput).then(function(pin) {
+                    if (pin && pin.payload && pin.payload.activities && pin.payload.activities.length > 0) {
+                        loadingMsg.classList.add('hidden');
+                        backupCloudConfigForPinnedView();
+                        applyFrozenConfigFromSnapshotPayload(pin.payload);
+                        displayResultsFromPinnedSnapshot(pin);
+                        searchBtn.disabled = false;
+                        searchBtn.textContent = '🔎 Xem điểm KPI của tôi';
+                        return;
+                    }
+                    runSheetSearch();
+                }).catch(function() { runSheetSearch(); });
+            } else {
+                runSheetSearch();
+            }
         }
         
         function processSearch(nameInput, activities, year) {
@@ -1493,6 +1714,9 @@
             searchBtn.disabled = false;
             searchBtn.textContent = '🔎 Xem điểm KPI của tôi';
         }
+
+        // Nạp settings toàn cục (tắt/bật quyền user tự chọn cách 1/2)
+        fetchAppSettings_().then(function() {});
 
         function normalizeText(value) {
             return (value || '').toString().toLowerCase().trim().replace(/\s+/g, ' ');
@@ -1598,10 +1822,15 @@
             var authorNames = authorMap[getActivityGroupKey(activity)] || [];
             // Với các đề tài Nafosted (Đề tài KHCN Nafosted) chỉ hiển thị người đứng tên đề tài,
             // không gom thêm tên ở các dòng khác của cùng đề tài.
-            var isNafostedProject =
-                normalizeText(activity.ranking || '').indexOf('nafosted') !== -1 ||
-                normalizeText(activity.activityType || '').indexOf('nafosted') !== -1;
-            if (isNafostedProject) {
+            var rankingNorm = normalizeText(activity.ranking || '');
+            var typeNorm = normalizeText(activity.activityType || '');
+            var isNafostedProject = rankingNorm.indexOf('nafosted') !== -1 || typeNorm.indexOf('nafosted') !== -1;
+            // Với đề tài ĐHQG (mỗi đề tài thường chỉ có 1 người đứng tên), chỉ hiển thị 1 người đứng tên,
+            // tránh việc gom nhầm nhiều tác giả từ các dòng cùng nhóm.
+            var isDhqgProject =
+                rankingNorm.indexOf('đhqg') !== -1 || rankingNorm.indexOf('dhqg') !== -1 ||
+                typeNorm.indexOf('đhqg') !== -1 || typeNorm.indexOf('dhqg') !== -1;
+            if (isNafostedProject || isDhqgProject) {
                 if (activity.authorName) return [activity.authorName];
                 return authorNames.length ? [authorNames[0]] : [];
             }
@@ -2298,17 +2527,59 @@
             }
         }
 
-        function displayResults(name, activities, year, allActivities) {
-            kOverridesByIndex = {};
-            activities.forEach(function(a, idx) {
-                var sk = getKOverrideForActivity(a);
-                if (sk !== undefined) kOverridesByIndex[idx] = sk;
-            });
+        function displayResultsFromPinnedSnapshot(pin) {
+            var p = pin.payload;
+            var pinnedMeta = {
+                isPinnedFromSnapshot: true,
+                pinnedSnapshotId: pin.id,
+                pinnedSnapshotAt: pin.created_at,
+                kOverridesSnapshot: Object.assign({}, p.kOverridesByIndex || {})
+            };
+            displayResults(
+                (p.name || '').toString() || (document.getElementById('nameInput').value || '').trim(),
+                p.activities,
+                (p.year || '').toString() || (document.getElementById('yearSelect').value || '').trim(),
+                p.allActivities || [],
+                pinnedMeta
+            );
+        }
+
+        function getPinnedMetaForRedisplay() {
+            if (!lastSearchResult || !lastSearchResult.isPinnedFromSnapshot) return null;
+            return {
+                isPinnedFromSnapshot: true,
+                pinnedSnapshotId: lastSearchResult.pinnedSnapshotId,
+                pinnedSnapshotAt: lastSearchResult.pinnedSnapshotAt,
+                kOverridesSnapshot: Object.assign({}, kOverridesByIndex || {})
+            };
+        }
+
+        function displayResults(name, activities, year, allActivities, pinnedMeta) {
+            pinnedMeta = pinnedMeta || null;
+            if (pinnedMeta && pinnedMeta.isPinnedFromSnapshot) {
+                kOverridesByIndex = Object.assign({}, pinnedMeta.kOverridesSnapshot || {});
+            } else {
+                kOverridesByIndex = {};
+                activities.forEach(function(a, idx) {
+                    var sk = getKOverrideForActivity(a);
+                    if (sk !== undefined) kOverridesByIndex[idx] = sk;
+                });
+            }
             document.getElementById('searchView').classList.add('hidden');
             document.getElementById('resultView').classList.remove('hidden');
             var hs = document.getElementById('helpSidebar');
             if (hs) hs.classList.remove('hidden');
             document.getElementById('userName').textContent = name + ' - Năm ' + year;
+            var noticeEl = document.getElementById('pinnedSnapshotNotice');
+            if (noticeEl) {
+                if (pinnedMeta && pinnedMeta.isPinnedFromSnapshot && pinnedMeta.pinnedSnapshotAt) {
+                    noticeEl.textContent = 'Đang hiển thị bản chốt điểm đã lưu (' + formatViDateTime(pinnedMeta.pinnedSnapshotAt) + '). Dữ liệu Google Sheet mới hơn không thay thế bản này.';
+                    noticeEl.classList.remove('hidden');
+                } else {
+                    noticeEl.textContent = '';
+                    noticeEl.classList.add('hidden');
+                }
+            }
             var totalScore = activities.reduce(function(sum, a, i) {
                 return sum + computeFinalScoreHours(a, allActivities, kOverridesByIndex[i]);
             }, 0);
@@ -2324,6 +2595,11 @@
                 kOverridesByIndex: kOverridesByIndex,
                 totalScoreHours: totalScore
             };
+            if (pinnedMeta && pinnedMeta.isPinnedFromSnapshot) {
+                lastSearchResult.isPinnedFromSnapshot = true;
+                lastSearchResult.pinnedSnapshotId = pinnedMeta.pinnedSnapshotId;
+                lastSearchResult.pinnedSnapshotAt = pinnedMeta.pinnedSnapshotAt;
+            }
             updateKpiSurplusSummary();
             
             var listHTML = activities.map(function(a, idx) {
@@ -2441,64 +2717,89 @@
                 }
 
                 var allocationRow = '';
-                if (isAdminSession()) {
-                    var allocMode = getAllocationMode(a);
-                    var allocStrategy = getAgreementStrategy(a);
-                    var assigneeNorm = getAllocationAssignee(a);
-                    var assigneeText = assigneeNorm ? assigneeNorm : 'chưa quy tác giả';
-                    var manualInputs = '';
-                    if (allocMode === 'agreement' && allocStrategy === 'manual_split') {
-                        var lockedAlloc = isAllocationLocked(a);
-                        var manualRows = authorNames.map(function(an) {
-                            var nrm = normalizeName(an);
-                            var cur = getManualAllocatedHoursByNorm(a, nrm);
-                            var v = (cur === null || cur === undefined) ? '' : String(cur);
-                            return '<div style="display:flex;gap:8px;align-items:center;margin-top:6px;">' +
-                                '<div style="flex:1;color:#2d3748;">' + escapeHtml(an) + '</div>' +
-                                '<input type="number" min="0" step="1" class="admin-manual-alloc-input" data-activity-index="' + idx + '" data-author-norm="' + nrm + '" value="' + v + '"' + (lockedAlloc ? ' disabled' : '') + ' style="width:110px;padding:6px 8px;font-size:0.88em;border:1px solid #cbd5e0;border-radius:6px;" />' +
-                                '<span style="color:#4a5568;font-size:0.85em;">giờ</span>' +
-                            '</div>';
-                        });
-                        var pool = getActivityPoolHours(a);
-                        var allocated = sumManualAllocatedHoursForGroup(a, allActivities);
-                        var isValidManual = allocated === pool;
-                        var isHeffValid = getHeffValidation(a).ok;
-                        var tone = isValidManual ? '#2f855a' : '#c53030';
-                        var statusText = isValidManual
-                            ? 'Tổng phân bổ hợp lệ.'
-                            : 'Cảnh báo: tổng phân bổ khác H_pool, chưa thể chốt.';
-                        var lockBtn = lockedAlloc
+                // User thường vẫn thấy khung lựa chọn; chỉ bị mờ/khóa nếu admin tắt.
+                var canEditAllocUi = canUserEditAllocationUi_();
+                var allocMode = getAllocationMode(a);
+                var allocStrategy = getAgreementStrategy(a);
+                var assigneeNorm = getAllocationAssignee(a);
+                var assigneeText = assigneeNorm ? assigneeNorm : 'chưa quy tác giả';
+                var manualInputs = '';
+                if (allocMode === 'agreement' && allocStrategy === 'manual_split') {
+                    var lockedAlloc = isAllocationLocked(a);
+                    var manualRows = authorNames.map(function(an) {
+                        var nrm = normalizeName(an);
+                        var cur = getManualAllocatedHoursByNorm(a, nrm);
+                        var v = (cur === null || cur === undefined) ? '' : String(cur);
+                        return '<div style="display:flex;gap:8px;align-items:center;margin-top:6px;">' +
+                            '<div style="flex:1;color:#2d3748;">' + escapeHtml(an) + '</div>' +
+                            '<input type="number" min="0" step="1" class="admin-manual-alloc-input" data-activity-index="' + idx + '" data-author-norm="' + nrm + '" value="' + v + '"' + (lockedAlloc || !canEditAllocUi ? ' disabled' : '') + ' style="width:110px;padding:6px 8px;font-size:0.88em;border:1px solid #cbd5e0;border-radius:6px;" />' +
+                            '<span style="color:#4a5568;font-size:0.85em;">giờ</span>' +
+                        '</div>';
+                    });
+                    var pool = getActivityPoolHours(a);
+                    var allocated = sumManualAllocatedHoursForGroup(a, allActivities);
+                    var isValidManual = allocated === pool;
+                    var isHeffValid = getHeffValidation(a).ok;
+                    var tone = isValidManual ? '#2f855a' : '#c53030';
+                    var statusText = isValidManual
+                        ? 'Tổng phân bổ hợp lệ.'
+                        : 'Cảnh báo: tổng phân bổ khác H_pool, chưa thể chốt.';
+                    var lockBtn = isAdminSession()
+                        ? (lockedAlloc
                             ? '<button type="button" class="admin-allocation-lock unlock" data-activity-index="' + idx + '" data-lock-action="unlock">Mở chốt phân bổ</button>'
-                            : '<button type="button" class="admin-allocation-lock" data-activity-index="' + idx + '" data-lock-action="lock"' + ((isValidManual && isHeffValid) ? '' : ' disabled') + '>Chốt phân bổ</button>';
-                        manualInputs = '<div class="admin-allocation-hint" style="margin-top:8px;">Nhập giờ cho từng tác giả theo văn bản thỏa thuận.</div>' +
-                            '<div style="margin-top:6px;padding:8px;background:#fff;border:1px solid #f6ad55;border-radius:8px;">' + manualRows.join('') +
-                            '<div style="margin-top:8px;font-size:0.84em;color:' + tone + ';"><strong>Tổng đã phân bổ:</strong> ' + allocated + ' / ' + pool + ' giờ. ' + statusText + '</div>' +
-                            (isHeffValid ? '' : '<div style="margin-top:6px;font-size:0.84em;color:#c53030;"><strong>Chưa thể chốt:</strong> thông tin H_eff chưa hợp lệ.</div>') +
-                            lockBtn +
-                            '</div>';
-                    }
-                    allocationRow =
-                        '<div class="admin-allocation-row">' +
-                        '<label for="allocMode-' + idx + '">Cách tính điểm công trình:</label>' +
-                        '<select id="allocMode-' + idx + '" class="admin-allocation-mode-select" data-activity-index="' + idx + '">' +
-                            '<option value="auto"' + (allocMode === 'auto' ? ' selected' : '') + '>Cách 2 (mặc định tự động)</option>' +
-                            '<option value="agreement"' + (allocMode === 'agreement' ? ' selected' : '') + '>Cách 1 (theo thỏa thuận tác giả)</option>' +
-                        '</select>' +
-                        (allocMode === 'agreement'
-                            ? '<div style="margin-top:8px;"><label for="allocStrategy-' + idx + '">Kiểu phân bổ Cách 1:</label>' +
-                              '<select id="allocStrategy-' + idx + '" class="admin-allocation-strategy-select" data-activity-index="' + idx + '">' +
-                                '<option value="single_assignee"' + (allocStrategy === 'single_assignee' ? ' selected' : '') + '>Quy toàn bộ cho 1 tác giả</option>' +
-                                '<option value="manual_split"' + (allocStrategy === 'manual_split' ? ' selected' : '') + '>Chia tay cho từng tác giả</option>' +
-                              '</select></div>'
-                            : '') +
-                        '<div class="admin-allocation-hint">Cách 1 hiện lưu: <strong>' + escapeHtml(assigneeText) + '</strong>.</div>' +
-                        (allocMode === 'agreement'
-                            ? (allocStrategy === 'single_assignee'
-                                ? '<button type="button" class="admin-allocation-assign" data-activity-index="' + idx + '">Quy toàn bộ điểm cho tác giả đang xét (' + escapeHtml(name) + ')</button>'
-                                : manualInputs)
-                            : '') +
+                            : '<button type="button" class="admin-allocation-lock" data-activity-index="' + idx + '" data-lock-action="lock"' + ((isValidManual && isHeffValid) ? '' : ' disabled') + '>Chốt phân bổ</button>')
+                        : '';
+                    manualInputs = '<div class="admin-allocation-hint" style="margin-top:8px;">Nhập giờ cho từng tác giả theo văn bản thỏa thuận.</div>' +
+                        '<div style="margin-top:6px;padding:8px;background:#fff;border:1px solid #f6ad55;border-radius:8px;">' + manualRows.join('') +
+                        '<div style="margin-top:8px;font-size:0.84em;color:' + tone + ';"><strong>Tổng đã phân bổ:</strong> ' + allocated + ' / ' + pool + ' giờ. ' + statusText + '</div>' +
+                        (isHeffValid ? '' : '<div style="margin-top:6px;font-size:0.84em;color:#c53030;"><strong>Chưa thể chốt:</strong> thông tin H_eff chưa hợp lệ.</div>') +
+                        lockBtn +
                         '</div>';
                 }
+                var pdfInfo = getAgreementPdfInfo_(year, a);
+                var hasPdf = hasAgreementPdfUploaded_(year, a);
+                var pdfRow = '';
+                if (!isAdminSession() && (appSettings && appSettings.userAllocationEnabled)) {
+                    pdfRow =
+                        '<div style="margin-top:10px;padding:10px;border:1px dashed #cbd5e0;border-radius:10px;background:#f7fafc;">' +
+                            '<div style="font-weight:700;color:#2d3748;margin-bottom:6px;">PDF thỏa thuận (bắt buộc nếu chọn Cách 1)</div>' +
+                            '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">' +
+                                '<input type="file" accept=\"application/pdf,.pdf\" class=\"user-agreement-file\" data-activity-index=\"' + idx + '\" style=\"flex:1;min-width:220px;padding:8px 10px;border:1px solid #cbd5e0;border-radius:8px;background:#fff;\" ' + (canEditAllocUi ? '' : ' disabled') + ' />' +
+                                '<button type=\"button\" class=\"btn-export user-agreement-upload-btn\" data-activity-index=\"' + idx + '\" style=\"margin:0;padding:8px 12px;\"' + (canEditAllocUi ? '' : ' disabled') + '>Upload</button>' +
+                            '</div>' +
+                            '<div class=\"user-agreement-upload-status\" id=\"agStatus-' + idx + '\" style=\"margin-top:6px;color:' + (hasPdf ? '#2f855a' : '#718096') + ';font-size:0.9em;\">' +
+                                (hasPdf ? ('Đã upload: ' + escapeHtml((pdfInfo && pdfInfo.filename) ? pdfInfo.filename : 'PDF') + ' (' + formatViDateTime(pdfInfo.uploadedAt) + ')') : 'Chưa upload PDF.') +
+                            '</div>' +
+                        '</div>';
+                }
+
+                allocationRow =
+                    '<div class="admin-allocation-row' + (canEditAllocUi ? '' : ' consensus-row-muted') + '">' +
+                    '<label for="allocMode-' + idx + '">Cách tính điểm công trình:</label>' +
+                    '<select id="allocMode-' + idx + '" class="admin-allocation-mode-select" data-activity-index="' + idx + '"' + (canEditAllocUi ? '' : ' disabled') + '>' +
+                        '<option value="auto"' + (allocMode === 'auto' ? ' selected' : '') + '>Cách 2 (mặc định tự động)</option>' +
+                        '<option value="agreement"' + (allocMode === 'agreement' ? ' selected' : '') + '>Cách 1 (theo thỏa thuận tác giả)</option>' +
+                    '</select>' +
+                    (allocMode === 'agreement'
+                        ? '<div style="margin-top:8px;"><label for="allocStrategy-' + idx + '">Kiểu phân bổ Cách 1:</label>' +
+                          '<select id="allocStrategy-' + idx + '" class="admin-allocation-strategy-select" data-activity-index="' + idx + '"' + (canEditAllocUi ? '' : ' disabled') + '>' +
+                            '<option value="single_assignee"' + (allocStrategy === 'single_assignee' ? ' selected' : '') + '>Quy toàn bộ cho 1 tác giả</option>' +
+                            '<option value="manual_split"' + (allocStrategy === 'manual_split' ? ' selected' : '') + '>Chia tay cho từng tác giả</option>' +
+                          '</select></div>'
+                        : '') +
+                    '<div class="admin-allocation-hint">Cách 1 hiện lưu: <strong>' + escapeHtml(assigneeText) + '</strong>.</div>' +
+                    (!canEditAllocUi
+                        ? '<div class="admin-allocation-hint" style="color:#718096;">Tính năng này đang tắt bởi quản trị viên.</div>'
+                        : '') +
+                    (allocMode === 'agreement'
+                        ? (allocStrategy === 'single_assignee'
+                            ? (isAdminSession()
+                                ? '<button type="button" class="admin-allocation-assign" data-activity-index="' + idx + '">Quy toàn bộ điểm cho tác giả đang xét (' + escapeHtml(name) + ')</button>'
+                                : '<div class="admin-allocation-hint" style="margin-top:6px;color:#2d3748;"><strong>Yêu cầu:</strong> sẽ cần upload PDF thỏa thuận (sẽ bổ sung luồng upload ở bước kế tiếp).</div>')
+                            : manualInputs)
+                        : '') +
+                    pdfRow +
+                    '</div>';
                 var isMutedByAgreement = isAgreementBlockedForCurrentUser(a);
                 
                 return '<div class="activity-card' + (isMutedByAgreement ? ' activity-card-muted' : '') + '" data-activity-index="' + idx + '" data-inv-enc="' + encGroup + '">' +
@@ -2530,11 +2831,17 @@
         }
 
         function goBack() {
+            restoreCloudConfigAfterPinnedView();
             kOverridesByIndex = {};
             document.getElementById('searchView').classList.remove('hidden');
             document.getElementById('resultView').classList.add('hidden');
             var hs = document.getElementById('helpSidebar');
             if (hs) hs.classList.add('hidden');
+            var pn = document.getElementById('pinnedSnapshotNotice');
+            if (pn) {
+                pn.textContent = '';
+                pn.classList.add('hidden');
+            }
             document.getElementById('nameInput').value = '';
             document.getElementById('errorMessage').classList.add('hidden');
         }
@@ -2564,8 +2871,16 @@
                 return sum + computeFinalScoreHours(a, allActivities, kMap[idx]);
             }, 0);
 
+            lastSearchResult.kOverridesByIndex = Object.assign({}, kMap || {});
+            lastSearchResult.frozenCloudConfigSnapshot = {
+                invalidByGroup: cloneJsonSafe_(cloudConfig.invalidByGroup),
+                authorByRow: cloneJsonSafe_(cloudConfig.authorByRow),
+                allocationByGroup: cloneJsonSafe_(cloudConfig.allocationByGroup)
+            };
+
+            var snapId = getSnapshotStorageId(year, name);
             var snapshot = {
-                id: 'snap_' + now.getTime(),
+                id: snapId,
                 createdAt: now.toISOString(),
                 name: name,
                 year: year,
@@ -2574,16 +2889,19 @@
                 // Lưu đủ dữ liệu để đối chiếu lại về sau
                 payload: lastSearchResult
             };
+            snapshot.payload.snapshotId = snapId;
+            snapshot.payload.snapshotSavedAt = snapshot.createdAt;
 
-            var arr = getAdminSnapshots();
+            var arr = getAdminSnapshots().filter(function(s) {
+                if (String(s.year || '') !== String(year)) return true;
+                return !isSamePerson((s.name || '').toString(), name);
+            });
             arr.unshift(snapshot);
-            // giữ tối đa 50 lượt gần nhất để tránh phình localStorage
-            if (arr.length > 50) arr = arr.slice(0, 50);
             localStorage.setItem(LS_ADMIN_SNAPSHOTS_KEY, JSON.stringify(arr));
             // Nếu có bật Supabase cấu hình, lưu thêm lên cloud
             pushSnapshotToSupabase(snapshot).then(function(ok) {
-                var cloudMsg = ok ? ' (đã lưu Supabase)' : (isSupabaseKpiConfigReady() ? ' (không lưu được Supabase)' : '');
-                alert('Đã lưu lượt tra cứu cho "' + name + '" năm ' + year + ' (tổng ' + snapshot.totalScore + ' giờ)' + cloudMsg + '.');
+                var cloudMsg = ok ? ' (đã cập nhật Supabase)' : (isSupabaseKpiConfigReady() ? ' (không lưu được Supabase)' : '');
+                alert('Đã chốt / cập nhật bản tra cứu cho "' + name + '" năm ' + year + ' (tổng ' + snapshot.totalScore + ' giờ)' + cloudMsg + '.');
             });
         }
 
@@ -2692,10 +3010,9 @@
                 alert('Không tìm thấy dữ liệu snapshot để mở.');
                 return;
             }
-            lastSearchResult = row.payload;
-            if (row.payload && row.payload.kOverridesByIndex) kOverridesByIndex = row.payload.kOverridesByIndex;
-            // nạp lại giao diện
-            displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || []);
+            backupCloudConfigForPinnedView();
+            applyFrozenConfigFromSnapshotPayload(row.payload);
+            displayResultsFromPinnedSnapshot({ id: row.id, created_at: row.created_at, payload: row.payload });
             closeSnapshotsModal();
         }
 
@@ -2792,12 +3109,26 @@
                 var idxM = parseInt(t.getAttribute('data-activity-index'), 10);
                 if (!lastSearchResult || isNaN(idxM)) return;
                 var activityM = lastSearchResult.activities[idxM];
+                var canEditAllocUi = canUserEditAllocationUi_();
+                if (!canEditAllocUi) {
+                    t.value = getAllocationMode(activityM) === 'agreement' ? 'agreement' : 'auto';
+                    return;
+                }
+                if (!isAdminSession() && t.value === 'agreement') {
+                    if (!hasAgreementPdfUploaded_(lastSearchResult.year, activityM)) {
+                        alert('Bạn cần upload PDF thỏa thuận trước khi chọn Cách 1.');
+                        t.value = 'auto';
+                        return;
+                    }
+                    setAgreementStrategy(activityM, getAgreementStrategy(activityM) || 'single_assignee');
+                    setAllocationAssignee(activityM, lastSearchResult.name || '');
+                }
                 setAllocationMode(activityM, t.value === 'agreement' ? 'agreement' : 'auto');
                 if (t.value !== 'agreement') {
                     setAllocationAssignee(activityM, '');
                     setAgreementStrategy(activityM, 'single_assignee');
                 }
-                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || []);
+                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || [], getPinnedMetaForRedisplay());
                 return;
             }
 
@@ -2808,7 +3139,7 @@
                 setPrimaryOutsideOverride(activityO, t.checked);
                 if (t.checked) setInUnitAuthorCountOverride(activityO, getInUnitAuthorCountForActivity(activityO));
                 refreshActivityCardKUI(idxO);
-                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || []);
+                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || [], getPinnedMetaForRedisplay());
                 return;
             }
 
@@ -2818,7 +3149,7 @@
                 var activityP = lastSearchResult.activities[idxP];
                 setProjectRegisteredProduct(activityP, t.checked);
                 refreshActivityCardKUI(idxP);
-                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || []);
+                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || [], getPinnedMetaForRedisplay());
                 return;
             }
 
@@ -2828,7 +3159,7 @@
                 var activityPA = lastSearchResult.activities[idxPA];
                 setProjectRuleConfig(activityPA, { isProjectActivityOverride: !!t.checked });
                 refreshActivityCardKUI(idxPA);
-                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || []);
+                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || [], getPinnedMetaForRedisplay());
                 return;
             }
 
@@ -2838,7 +3169,7 @@
                 var activityPS = lastSearchResult.activities[idxPS];
                 setProjectRuleConfig(activityPS, { projectStartYmOverride: (t.value || '').trim() });
                 refreshActivityCardKUI(idxPS);
-                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || []);
+                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || [], getPinnedMetaForRedisplay());
                 return;
             }
 
@@ -2848,7 +3179,7 @@
                 var activityPE = lastSearchResult.activities[idxPE];
                 setProjectRuleConfig(activityPE, { projectEndYmOverride: (t.value || '').trim() });
                 refreshActivityCardKUI(idxPE);
-                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || []);
+                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || [], getPinnedMetaForRedisplay());
                 return;
             }
 
@@ -2858,7 +3189,7 @@
                 var activityIU = lastSearchResult.activities[idxIU];
                 setInUnitAuthorCountOverride(activityIU, t.value);
                 refreshActivityCardKUI(idxIU);
-                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || []);
+                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || [], getPinnedMetaForRedisplay());
                 return;
             }
 
@@ -2866,8 +3197,19 @@
                 var idxS = parseInt(t.getAttribute('data-activity-index'), 10);
                 if (!lastSearchResult || isNaN(idxS)) return;
                 var activityS = lastSearchResult.activities[idxS];
+                if (!canUserEditAllocationUi_()) {
+                    t.value = getAgreementStrategy(activityS) === 'manual_split' ? 'manual_split' : 'single_assignee';
+                    return;
+                }
+                if (!isAdminSession() && getAllocationMode(activityS) === 'agreement') {
+                    if (!hasAgreementPdfUploaded_(lastSearchResult.year, activityS)) {
+                        alert('Bạn cần upload PDF thỏa thuận trước khi chỉnh Cách 1.');
+                        t.value = 'single_assignee';
+                        return;
+                    }
+                }
                 setAgreementStrategy(activityS, t.value === 'manual_split' ? 'manual_split' : 'single_assignee');
-                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || []);
+                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || [], getPinnedMetaForRedisplay());
                 return;
             }
 
@@ -2883,7 +3225,7 @@
                 var rowKey = getActivityGroupKey(activityH) + '||' + authorNormH;
                 pushAuthorRowToCloudByAuthorKey(lastSearchResult.year, rowKey);
                 refreshActivityCardKUI(idxH);
-                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || []);
+                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || [], getPinnedMetaForRedisplay());
                 return;
             }
 
@@ -2907,6 +3249,46 @@
 
         document.getElementById('activitiesList').addEventListener('click', function(e) {
             var t = e.target;
+            if (t && t.classList && t.classList.contains('user-agreement-upload-btn')) {
+                var idxU = parseInt(t.getAttribute('data-activity-index'), 10);
+                if (!lastSearchResult || isNaN(idxU)) return;
+                if (!canUserEditAllocationUi_()) return;
+                if (!isSupabaseKpiConfigReady()) {
+                    alert('Chưa cấu hình Supabase để upload PDF.');
+                    return;
+                }
+                var wrap = t.closest('.admin-allocation-row');
+                var input = wrap ? wrap.querySelector('input.user-agreement-file[data-activity-index="' + idxU + '"]') : null;
+                var file = input && input.files ? input.files[0] : null;
+                if (!file) {
+                    alert('Vui lòng chọn file PDF trước khi upload.');
+                    return;
+                }
+                var statusEl = document.getElementById('agStatus-' + idxU);
+                t.disabled = true;
+                if (statusEl) {
+                    statusEl.style.color = '#2b6cb0';
+                    statusEl.textContent = 'Đang upload...';
+                }
+                uploadAgreementPdfToSupabase_(lastSearchResult.year, lastSearchResult.activities[idxU], file)
+                    .then(function(info) {
+                        t.disabled = false;
+                        if (statusEl) {
+                            statusEl.style.color = '#2f855a';
+                            statusEl.textContent = 'Đã upload: ' + (info.filename || 'PDF') + ' (' + formatViDateTime(info.uploadedAt) + ')';
+                        }
+                        alert('Upload PDF thỏa thuận thành công. Bạn có thể chọn Cách 1.');
+                    })
+                    .catch(function(err) {
+                        t.disabled = false;
+                        if (statusEl) {
+                            statusEl.style.color = '#c53030';
+                            statusEl.textContent = 'Upload thất bại: ' + String((err && err.message) ? err.message : err);
+                        }
+                        alert('Upload thất bại: ' + String((err && err.message) ? err.message : err));
+                    });
+                return;
+            }
             if (t && t.classList && t.classList.contains('admin-allocation-lock')) {
                 var idxL = parseInt(t.getAttribute('data-activity-index'), 10);
                 if (!lastSearchResult || isNaN(idxL)) return;
@@ -2927,7 +3309,7 @@
                     }
                     setAllocationLocked(actL, true);
                 }
-                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || []);
+                displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || [], getPinnedMetaForRedisplay());
                 return;
             }
             if (!t || !t.classList || !t.classList.contains('admin-allocation-assign')) return;
@@ -2937,7 +3319,7 @@
             setAllocationMode(act, 'agreement');
             setAgreementStrategy(act, 'single_assignee');
             setAllocationAssignee(act, lastSearchResult.name || '');
-            displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || []);
+            displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || [], getPinnedMetaForRedisplay());
         });
         
         loadAvailableYears();

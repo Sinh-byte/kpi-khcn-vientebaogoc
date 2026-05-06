@@ -65,6 +65,19 @@
                 Hệ thống sử dụng Google Apps Script để đồng bộ dữ liệu tự động
             </p>
         </div>
+
+        <div class="config-section" style="background:#fffaf0;border-left-color:#dd6b20;">
+            <h2>👥 Quyền user tự chọn cách tính</h2>
+            <p style="color:#2d3748;margin-bottom:10px;">
+                Khi bật, user thường có thể chọn <strong>Cách 1 / Cách 2</strong> và sử dụng các chức năng liên quan (ví dụ upload thỏa thuận).
+                Khi tắt, user vẫn thấy khung lựa chọn nhưng sẽ bị <strong>mờ</strong> và <strong>không thao tác được</strong>.
+            </p>
+            <label style="display:flex;gap:10px;align-items:center;font-weight:700;color:#2d3748;">
+                <input type="checkbox" id="toggleUserAllocation" style="width:auto;margin:0;">
+                Cho phép user tự chọn Cách 1/Cách 2
+            </label>
+            <div id="toggleUserAllocationStatus" style="margin-top:8px;color:#718096;font-size:0.9em;"></div>
+        </div>
         
         <div class="stats" id="stats">
             <div class="stat-card"><div class="stat-number" id="statusIcon">⏳</div><div>Trạng thái API</div></div>
@@ -97,6 +110,7 @@
     <script>
         var ADMIN_PASSWORD = 'admin2024';
         var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwb9fcZPwcG8QaX4AwrIfqAO7843xaXc2u7bTtioxK8sMcpz-XAadQHbLDlaBM0wdLc/exec';
+        var KPI_CONFIG_TOKEN = '';
         var currentFileData = null;
         
         function checkAuth() { 
@@ -125,6 +139,69 @@
             document.getElementById('loginView').classList.add('hidden');
             document.getElementById('dashboardView').classList.remove('hidden');
             updateStatus();
+            loadUserAllocationToggle();
+        }
+
+        function fetchAppSettings() {
+            var url = SCRIPT_URL + '?action=getAppSettings';
+            if (KPI_CONFIG_TOKEN) url += '&token=' + encodeURIComponent(KPI_CONFIG_TOKEN);
+            return jsonpRequest(url);
+        }
+
+        function setAppSetting(key, value) {
+            var url = SCRIPT_URL + '?action=setAppSetting&key=' + encodeURIComponent(key) + '&value=' + encodeURIComponent(String(value));
+            if (KPI_CONFIG_TOKEN) url += '&token=' + encodeURIComponent(KPI_CONFIG_TOKEN);
+            return jsonpRequest(url);
+        }
+
+        function jsonpRequest(url) {
+            return new Promise(function(resolve, reject) {
+                var cbName = '__cb_' + Math.random().toString(36).slice(2) + '_' + Date.now();
+                var sep = url.indexOf('?') >= 0 ? '&' : '?';
+                var full = url + sep + 'callback=' + encodeURIComponent(cbName);
+                var script = document.createElement('script');
+                var done = false;
+                window[cbName] = function(data) {
+                    done = true;
+                    try { resolve(data); } finally {
+                        cleanup();
+                    }
+                };
+                function cleanup() {
+                    try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+                    if (script && script.parentNode) script.parentNode.removeChild(script);
+                }
+                script.onerror = function() {
+                    if (done) return;
+                    cleanup();
+                    reject(new Error('jsonp_failed'));
+                };
+                script.src = full;
+                document.head.appendChild(script);
+                setTimeout(function() {
+                    if (done) return;
+                    cleanup();
+                    reject(new Error('jsonp_timeout'));
+                }, 15000);
+            });
+        }
+
+        function loadUserAllocationToggle() {
+            var cb = document.getElementById('toggleUserAllocation');
+            var st = document.getElementById('toggleUserAllocationStatus');
+            if (!cb || !st) return;
+            st.textContent = 'Đang tải cấu hình...';
+            fetchAppSettings()
+                .then(function(data) {
+                    var v = data && data.settings ? data.settings.userAllocationEnabled : null;
+                    var on = (v === true || v === 'true' || v === 1 || v === '1');
+                    cb.checked = !!on;
+                    st.textContent = on ? 'Đang bật.' : 'Đang tắt.';
+                })
+                .catch(function() {
+                    st.textContent = 'Không tải được cấu hình (vẫn dùng mặc định: tắt).';
+                    cb.checked = false;
+                });
         }
         
         function goToUserPage() {
@@ -546,6 +623,28 @@
         document.getElementById('previewBtn').addEventListener('click', previewFile);
         document.getElementById('uploadToSheetsBtn').addEventListener('click', uploadToSheets);
         document.getElementById('cancelBtn').addEventListener('click', cancelPreview);
+
+        (function() {
+            var cb = document.getElementById('toggleUserAllocation');
+            var st = document.getElementById('toggleUserAllocationStatus');
+            if (!cb) return;
+            cb.addEventListener('change', function() {
+                if (sessionStorage.getItem('adminAuth') !== 'true') return;
+                cb.disabled = true;
+                if (st) st.textContent = 'Đang lưu...';
+                setAppSetting('userAllocationEnabled', cb.checked ? 'true' : 'false')
+                    .then(function(res) {
+                        cb.disabled = false;
+                        if (st) st.textContent = cb.checked ? 'Đang bật.' : 'Đang tắt.';
+                        if (!(res && res.ok)) alert('Không lưu được cấu hình: ' + (res && res.error ? res.error : 'unknown'));
+                    })
+                    .catch(function() {
+                        cb.disabled = false;
+                        if (st) st.textContent = 'Không lưu được cấu hình.';
+                        alert('Không lưu được cấu hình.');
+                    });
+            });
+        })();
     </script>
 </body>
 </html>

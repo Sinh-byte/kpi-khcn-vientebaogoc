@@ -3,6 +3,7 @@
  * Đặt SECRET_TOKEN khớp với KPI_CONFIG_TOKEN trong user.html (hoặc để '').
  */
 var KPI_CONFIG_SHEET_NAME = 'KPI_Config';
+var KPI_SETTINGS_SHEET_NAME = 'KPI_Settings';
 var SECRET_TOKEN = '';
 
 function handleKpiConfigDoGet_(e) {
@@ -16,10 +17,16 @@ function handleKpiConfigDoGet_(e) {
 
   try {
     if (action === 'getKpiConfig') {
-      return jsonOut_(getKpiConfigPayload_(p.year));
+      return jsonOut_(getKpiConfigPayload_(p.year), p.callback);
+    }
+    if (action === 'getAppSettings') {
+      return jsonOut_(getAppSettingsPayload_(), p.callback);
+    }
+    if (action === 'setAppSetting') {
+      return jsonOut_(setAppSetting_(p.key, p.value), p.callback);
     }
     if (action === 'setInvalid') {
-      return jsonOut_(setInvalidRow_(p.year, p.groupKey, p.invalid === 'true' || p.invalid === '1'));
+      return jsonOut_(setInvalidRow_(p.year, p.groupKey, p.invalid === 'true' || p.invalid === '1'), p.callback);
     }
     if (action === 'setAuthorRow') {
       return jsonOut_(setAuthorRow_(
@@ -28,16 +35,23 @@ function handleKpiConfigDoGet_(e) {
         p.authorNoPoints === 'true' || p.authorNoPoints === '1',
         p.kOverride,
         p.hasConsensus === 'true' || p.hasConsensus === '1'
-      ));
+      ), p.callback);
     }
   } catch (err) {
-    return jsonOut_({ ok: false, error: String(err.message || err) });
+    return jsonOut_({ ok: false, error: String(err.message || err) }, p.callback);
   }
 
   return null;
 }
 
-function jsonOut_(obj) {
+function jsonOut_(obj, callbackName) {
+  var cb = (callbackName || '').toString().trim();
+  if (cb) {
+    // JSONP để tránh CORS khi gọi từ localhost/static site
+    return ContentService
+      .createTextOutput(cb + '(' + JSON.stringify(obj) + ');')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
   return ContentService
     .createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
@@ -52,6 +66,47 @@ function getConfigSheet_() {
     sh.getRange(1, 1, 1, 9).setFontWeight('bold');
   }
   return sh;
+}
+
+function getSettingsSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(KPI_SETTINGS_SHEET_NAME);
+  if (!sh) {
+    sh = ss.insertSheet(KPI_SETTINGS_SHEET_NAME);
+    sh.appendRow(['key', 'value', 'updatedAt']);
+    sh.getRange(1, 1, 1, 3).setFontWeight('bold');
+  }
+  return sh;
+}
+
+function getAppSettingsPayload_() {
+  var sh = getSettingsSheet_();
+  var data = sh.getDataRange().getValues();
+  var out = {};
+  for (var i = 1; i < data.length; i++) {
+    var k = (data[i][0] || '').toString().trim();
+    if (!k) continue;
+    out[k] = data[i][1];
+  }
+  return { ok: true, settings: out };
+}
+
+function setAppSetting_(keyRaw, valueRaw) {
+  var key = (keyRaw || '').toString().trim();
+  if (!key) return { ok: false, error: 'missing key' };
+  var val = (valueRaw === undefined || valueRaw === null) ? '' : valueRaw;
+  var sh = getSettingsSheet_();
+  var data = sh.getDataRange().getValues();
+  var now = new Date();
+  for (var i = 1; i < data.length; i++) {
+    if ((data[i][0] || '').toString().trim() === key) {
+      sh.getRange(i + 1, 2).setValue(val);
+      sh.getRange(i + 1, 3).setValue(now);
+      return { ok: true };
+    }
+  }
+  sh.appendRow([key, val, now]);
+  return { ok: true };
 }
 
 function getKpiConfigPayload_(yearStr) {
@@ -205,28 +260,31 @@ function doGet(e) {
   availableYears.sort(function(a, b) { return b - a; });
 
   if (!sheetName) {
-    return ContentService.createTextOutput(JSON.stringify({
+    var obj0 = {
       availableYears: availableYears,
       values: []
-    })).setMimeType(ContentService.MimeType.JSON);
+    };
+    return jsonOut_(obj0, (e && e.parameter && e.parameter.callback) ? e.parameter.callback : '');
   }
 
   var sheet = ss.getSheetByName(sheetName);
 
   if (!sheet) {
-    return ContentService.createTextOutput(JSON.stringify({
+    var obj1 = {
       error: 'Sheet not found: ' + sheetName,
       availableYears: availableYears,
       values: []
-    })).setMimeType(ContentService.MimeType.JSON);
+    };
+    return jsonOut_(obj1, (e && e.parameter && e.parameter.callback) ? e.parameter.callback : '');
   }
 
   var data = sheet.getDataRange().getValues();
 
-  return ContentService.createTextOutput(JSON.stringify({
+  var obj2 = {
     values: data,
     availableYears: availableYears
-  })).setMimeType(ContentService.MimeType.JSON);
+  };
+  return jsonOut_(obj2, (e && e.parameter && e.parameter.callback) ? e.parameter.callback : '');
 }
 
 function normalizeText_(value) {
