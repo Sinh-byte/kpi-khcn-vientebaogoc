@@ -2101,6 +2101,28 @@
             return authorNames;
         }
 
+        /** Cảnh báo khi A (tổng số tác giả tính điểm) khác số tác giả duy nhất trong nhóm hiển thị (vd. trùng tên trong file). */
+        function getAuthorCountMismatchWarningHtml(activity, allActivities, authorMap) {
+            var A = parseInt(activity.totalAuthors, 10) || 1;
+            if (A <= 1) return '';
+            var rankingNorm = normalizeText(activity.ranking || '');
+            var typeNorm = normalizeText(activity.activityType || '');
+            var journalNorm = normalizeText(activity.journal || '');
+            var titleNorm = normalizeText(activity.title || '');
+            if (rankingNorm.indexOf('nafosted') !== -1 || typeNorm.indexOf('nafosted') !== -1) return '';
+            if (rankingNorm.indexOf('đhqg') !== -1 || rankingNorm.indexOf('dhqg') !== -1 ||
+                typeNorm.indexOf('đhqg') !== -1 || typeNorm.indexOf('dhqg') !== -1 ||
+                journalNorm.indexOf('đhqg') !== -1 || journalNorm.indexOf('dhqg') !== -1 ||
+                titleNorm.indexOf('đhqg') !== -1 || titleNorm.indexOf('dhqg') !== -1) return '';
+            var names = getAuthorNamesForActivity(activity, allActivities, authorMap);
+            var u = names.length;
+            if (u === 0) return '';
+            if (A === u) return '';
+            return '<div class="author-count-mismatch-warn" style="color:#c53030;font-size:0.9em;margin:6px 0 8px;padding:8px 10px;background:#fff5f5;border-radius:6px;border:1px solid #feb2b2;line-height:1.45;"><strong>Cảnh báo:</strong> ' +
+                'Tổng số tác giả dùng để tính điểm (A = ' + A + ') khác số tác giả duy nhất trong danh sách hiển thị (' + u +
+                '). Thường do trùng tên trong dữ liệu hoặc cột tổng số tác giả chưa khớp — nên kiểm tra file nguồn.</div>';
+        }
+
         function isPrimaryRole(role) {
             return role === 'first' || role === 'corresponding' || role === 'last';
         }
@@ -3090,6 +3112,7 @@
                 var authorListHtml = authorNames.length > 0
                     ? '<div style="color:#4a5568;font-size:0.9em;margin:8px 0 10px;"><strong>Tác giả:</strong> ' + formattedAuthorNames.join(', ') + '</div>'
                     : '';
+                var authorCountMismatchWarn = getAuthorCountMismatchWarningHtml(a, allActivities, authorMap);
                 var heffAdminRow = '';
                 if (isAdminSession()) {
                     var heffOut = getPrimaryOutsideForActivity(a);
@@ -3258,6 +3281,7 @@
                         authorBadge +
                     '</div>' +
                     authorListHtml +
+                    authorCountMismatchWarn +
                     detailInfoHtml +
                     heffAdminRow +
                     adminPanel +
