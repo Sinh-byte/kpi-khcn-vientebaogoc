@@ -228,7 +228,7 @@
                         <div id="jobRankAdminWrap" class="hidden">
                             <label for="jobRankSelect" style="display:block;font-weight:600;margin-top:10px;margin-bottom:6px;">Ngạch làm việc — chỉ quản trị (lưu trên máy chủ):</label>
                             <select id="jobRankSelect">
-                                <option value="researcher">Ngạch nghiên cứu viên — định mức KPI nghiên cứu bắt buộc 1760 giờ</option>
+                                <option value="researcher">Ngạch nghiên cứu viên — định mức KPI nghiên cứu bắt buộc (theo cấu hình)</option>
                                 <option value="specialist">Ngạch chuyên viên / khác — định mức KPI nghiên cứu bắt buộc 0 giờ</option>
                             </select>
                         </div>
@@ -296,7 +296,7 @@
         var cloudConfig = { invalidByGroup: {}, authorByRow: {}, allocationByGroup: {} };
         /** Sao chép cloudConfig trước khi áp bản chốt snapshot (để goBack khôi phục). */
         var cloudConfigBackupForPinned = null;
-        var appSettings = { userAllocationEnabled: false, personJobRanks: {} };
+        var appSettings = { userAllocationEnabled: false, personJobRanks: {}, mandatoryResearchKpiHours: null };
         var cachedData = {};
         var availableYears = [];
         var lastSearchResult = null;
@@ -576,12 +576,23 @@
             pushAllocationToCloud(activity);
         }
 
-        function ymToIndex(ym) {
-            var m = /^(\d{4})-(\d{2})$/.exec(String(ym || ''));
+        /** Chuẩn hóa YYYY-MM (cho phép tháng 1 chữ số / dấu /). Trả về null nếu không parse được. */
+        function canonicalYmString(ym) {
+            var raw = String(ym || '').trim();
+            var m = /^(\d{4})[\-/](\d{1,2})$/.exec(raw);
             if (!m) return null;
             var y = parseInt(m[1], 10);
             var mm = parseInt(m[2], 10);
             if (isNaN(y) || isNaN(mm) || mm < 1 || mm > 12) return null;
+            return y + '-' + (mm < 10 ? '0' : '') + mm;
+        }
+
+        function ymToIndex(ym) {
+            var canon = canonicalYmString(ym);
+            if (!canon) return null;
+            var m = /^(\d{4})-(\d{2})$/.exec(canon);
+            var y = parseInt(m[1], 10);
+            var mm = parseInt(m[2], 10);
             return y * 12 + (mm - 1);
         }
 
@@ -979,6 +990,12 @@
                                 appSettings.personJobRanks = parsedPr;
                             }
                         } catch (e1) {}
+                    }
+                    appSettings.mandatoryResearchKpiHours = null;
+                    var rawMh = s.mandatory_research_kpi_hours;
+                    if (rawMh != null && rawMh !== '') {
+                        var mh = parseInt(String(rawMh), 10);
+                        if (!isNaN(mh) && mh >= 0) appSettings.mandatoryResearchKpiHours = mh;
                     }
                     return appSettings;
                 })
@@ -2332,7 +2349,7 @@
         var MANDATORY_KPI_QD_NUMBER = '1226/QĐ-KHTN';
         var MANDATORY_KPI_QD_DATE = '07/6/2024';
 
-        /** Ngạch làm việc (lưu trong KPI_Settings, khóa person_job_ranks): chỉ NCV mới trừ định mức 1760. */
+        /** Ngạch làm việc (lưu trong KPI_Settings, khóa person_job_ranks): chỉ NCV mới trừ định mức (số giờ cấu hình mandatory_research_kpi_hours, mặc định 1760). */
         var JOB_RANK_RESEARCHER = 'researcher';
         var JOB_RANK_SPECIALIST = 'specialist';
 
@@ -2348,7 +2365,7 @@
         }
 
         function getMandatoryHoursForPerson(year, displayName) {
-            return getPersonJobRank(year, displayName) === JOB_RANK_RESEARCHER ? MANDATORY_KPI_WORK_HOURS : 0;
+            return getPersonJobRank(year, displayName) === JOB_RANK_RESEARCHER ? getMandatoryResearchKpiHoursForYear(year) : 0;
         }
 
         function syncJobRankControls_() {
@@ -2360,18 +2377,32 @@
             var rank = getPersonJobRank(year, lastSearchResult.name || '');
             var isRes = rank === JOB_RANK_RESEARCHER;
             var rankLabel = isRes ? 'Ngạch nghiên cứu viên' : 'Ngạch chuyên viên / khác';
+            var resHours = getMandatoryResearchKpiHoursForYear(year);
             var formula = isRes
-                ? ('Chênh lệch giờ = Tổng điểm KPI − ' + MANDATORY_KPI_WORK_HOURS + ' giờ (định mức KPI nghiên cứu bắt buộc theo Quyết định ' + MANDATORY_KPI_QD_NUMBER + ').')
+                ? ('Chênh lệch giờ = Tổng điểm KPI − ' + resHours + ' giờ (định mức KPI nghiên cứu bắt buộc theo Quyết định ' + MANDATORY_KPI_QD_NUMBER + ').')
                 : 'Chênh lệch giờ = Tổng điểm KPI − 0 (không áp dụng định mức KPI nghiên cứu bắt buộc đối với ngạch này).';
             explainEl.innerHTML = '<strong>Ngạch làm việc:</strong> ' + escapeHtml(rankLabel) + '. ' + formula;
             if (adminWrap) adminWrap.classList.toggle('hidden', !isAdminSession());
             if (sel && isAdminSession()) {
                 sel.value = isRes ? JOB_RANK_RESEARCHER : JOB_RANK_SPECIALIST;
+                if (sel.options && sel.options[0]) {
+                    sel.options[0].text = 'Ngạch nghiên cứu viên — định mức KPI nghiên cứu bắt buộc ' + resHours + ' giờ';
+                }
             }
         }
 
         function lsKeySurplusVndPerHour(year) {
             return LS_ADMIN_PREFIX + 'surplus_vnd_hour:' + String(year || '');
+        }
+
+        /** Giờ định mức KPI nghiên cứu bắt buộc cho ngạch NCV — từ KPI_Settings (Apps Script), mặc định 1760. */
+        function getMandatoryResearchKpiHoursForYear(year) {
+            var g = appSettings.mandatoryResearchKpiHours;
+            if (g !== null && g !== undefined && g !== '') {
+                var n = parseInt(String(g), 10);
+                if (!isNaN(n) && n >= 0) return n;
+            }
+            return MANDATORY_KPI_WORK_HOURS;
         }
 
         /** Năm 2025: đơn giá cố định 10.000 VND / 1 giờ KPI vượt. Các năm khác: admin nhập (localStorage). */
@@ -2441,12 +2472,13 @@
             var year = lastSearchResult.year || '';
             var personName = lastSearchResult.name || '';
             var pack = computeKpiSurplusPack(sum, year, personName);
+            var resQuota = getMandatoryResearchKpiHoursForYear(year);
             if (manEl) manEl.textContent = String(pack.mandatory);
             if (citeEl) {
                 if (pack.mandatory > 0) {
-                    citeEl.innerHTML = 'Căn cứ Quyết định số ' + MANDATORY_KPI_QD_NUMBER + ' ngày ' + MANDATORY_KPI_QD_DATE + ' của Hiệu trưởng Trường ĐH KHTN, ĐHQG-HCM; Bảng 1 (định mức thời gian làm việc) — cột Tổng <strong>' + MANDATORY_KPI_WORK_HOURS + '</strong> giờ hành chính theo từng chức danh (áp dụng khi ngạch làm việc là nghiên cứu viên).';
+                    citeEl.innerHTML = 'Căn cứ Quyết định số ' + MANDATORY_KPI_QD_NUMBER + ' ngày ' + MANDATORY_KPI_QD_DATE + ' của Hiệu trưởng Trường ĐH KHTN, ĐHQG-HCM; Bảng 1 (định mức thời gian làm việc) — cột Tổng <strong>' + resQuota + '</strong> giờ hành chính theo từng chức danh (áp dụng khi ngạch làm việc là nghiên cứu viên).';
                 } else {
-                    citeEl.innerHTML = 'Đối với <strong>ngạch chuyên viên / khác</strong> (không phải ngạch nghiên cứu viên): <strong>không áp dụng</strong> định mức KPI nghiên cứu bắt buộc ' + MANDATORY_KPI_WORK_HOURS + ' giờ; <strong>định mức = 0 giờ</strong>.';
+                    citeEl.innerHTML = 'Đối với <strong>ngạch chuyên viên / khác</strong> (không phải ngạch nghiên cứu viên): <strong>không áp dụng</strong> định mức KPI nghiên cứu bắt buộc ' + resQuota + ' giờ; <strong>định mức = 0 giờ</strong>.';
                 }
             }
             var surDisp = Math.round(pack.surplus * 100) / 100;
@@ -2542,6 +2574,7 @@
                 alert('Không tải được thư viện xuất DOCX. Vui lòng kiểm tra kết nối mạng và thử lại.');
                 return;
             }
+            await fetchAppSettings_();
 
             var name = lastSearchResult.name || 'NguoiDung';
             var year = lastSearchResult.year || '';
@@ -2828,8 +2861,8 @@
                                 new d.TextRun({ text: String(surplusPack.mandatory) + ' giờ. ', size: 22 }),
                                 new d.TextRun({
                                     text: surplusPack.mandatory > 0
-                                        ? ('Giờ hành chính theo Bảng 1. Căn cứ Quyết định số ' + MANDATORY_KPI_QD_NUMBER + ' ngày ' + MANDATORY_KPI_QD_DATE + ' của Hiệu trưởng Trường Đại học Khoa học Tự nhiên, ĐHQG-HCM về việc ban hành Quy định chế độ làm việc; Bảng 1 — cột Tổng ' + MANDATORY_KPI_WORK_HOURS + ' giờ theo từng chức danh (áp dụng cho ngạch nghiên cứu viên).')
-                                        : ('Không áp dụng định mức KPI nghiên cứu bắt buộc ' + MANDATORY_KPI_WORK_HOURS + ' giờ đối với ngạch chuyên viên / khác; định mức ghi nhận = 0 giờ.'),
+                                        ? ('Giờ hành chính theo Bảng 1. Căn cứ Quyết định số ' + MANDATORY_KPI_QD_NUMBER + ' ngày ' + MANDATORY_KPI_QD_DATE + ' của Hiệu trưởng Trường Đại học Khoa học Tự nhiên, ĐHQG-HCM về việc ban hành Quy định chế độ làm việc; Bảng 1 — cột Tổng ' + getMandatoryResearchKpiHoursForYear(year) + ' giờ theo từng chức danh (áp dụng cho ngạch nghiên cứu viên).')
+                                        : ('Không áp dụng định mức KPI nghiên cứu bắt buộc ' + getMandatoryResearchKpiHoursForYear(year) + ' giờ đối với ngạch chuyên viên / khác; định mức ghi nhận = 0 giờ.'),
                                     size: 22,
                                     italics: true,
                                     color: '444444'
@@ -3067,8 +3100,7 @@
                 lastSearchResult.pinnedSnapshotId = pinnedMeta.pinnedSnapshotId;
                 lastSearchResult.pinnedSnapshotAt = pinnedMeta.pinnedSnapshotAt;
             }
-            updateKpiSurplusSummary();
-            
+
             var listHTML = activities.map(function(a, idx) {
                 var roleNames = { first: 'Tác giả chính', corresponding: 'Tác giả liên hệ', last: 'Tác giả cuối', coauthor: 'Đồng tác giả' };
                 var activityType = getActivityType(a);
@@ -3142,7 +3174,17 @@
                         '<label style="margin-bottom:6px;">Số tác giả thuộc Viện: ' +
                         '<input type="number" class="admin-inunit-count-input' + (heffOut && !heffV.ok ? ' heff-input-invalid' : '') + '" data-activity-index="' + idx + '" min="0" max="' + A + '" value="' + (heffOut && !heffV.ok ? '' : heffInUnit) + '"' + (heffOut ? '' : ' disabled') + ' /></label>' +
                         '<div class="admin-heff-hint">H cơ sở hiện tại: ' + baseHForView + ' giờ' + (projectReg ? ' (đã áp dụng 2/3 từ Hmax)' : '') + '.</div>' +
-                        '<div class="admin-heff-hint">H_eff dùng để tính điểm: ' + baseHForView + ' × (' + heffInUnit + '/' + A + ') = ' + heffPool + ' giờ.</div>' +
+                        '<div class="admin-heff-hint">' + (function() {
+                            var hYear = projectYearHours !== null ? Math.round(projectYearHours * 100) / 100 : null;
+                            if (hYear !== null && projectCfg.isProjectActivity) {
+                                var tail = heffOut
+                                    ? ('; × (' + heffInUnit + '/' + A + ') = ' + heffPool + ' giờ.')
+                                    : (' = ' + heffPool + ' giờ.');
+                                return 'H<sub>eff</sub> dùng để tính điểm: H<sub>năm</sub> = ' + hYear +
+                                    ' giờ (phân bổ tháng ' + escapeHtml(projectCfg.startYm) + ' → ' + escapeHtml(projectCfg.endYm) + ')' + tail;
+                            }
+                            return 'H<sub>eff</sub> dùng để tính điểm: ' + baseHForView + ' × (' + heffInUnit + '/' + A + ') = ' + heffPool + ' giờ.';
+                        })() + '</div>' +
                         (heffV.ok ? '' : '<div class="admin-heff-hint" style="color:#c53030;margin-top:6px;"><strong>Cảnh báo:</strong> ' + escapeHtml(heffV.message) + '</div>') +
                         '</div>';
                 }
@@ -3297,6 +3339,9 @@
             }).join('');
             document.getElementById('activitiesList').innerHTML = listHTML;
             fetchCloudConfigAndMerge(year);
+            fetchAppSettings_().then(function() {
+                updateKpiSurplusSummary();
+            });
         }
 
         function goBack() {
@@ -3647,7 +3692,9 @@
                 var idxPS = parseInt(t.getAttribute('data-activity-index'), 10);
                 if (!lastSearchResult || isNaN(idxPS)) return;
                 var activityPS = lastSearchResult.activities[idxPS];
-                setProjectRuleConfig(activityPS, { projectStartYmOverride: (t.value || '').trim() });
+                var rawYmS = (t.value || '').trim();
+                var canonS = canonicalYmString(rawYmS);
+                setProjectRuleConfig(activityPS, { projectStartYmOverride: canonS !== null ? canonS : rawYmS });
                 refreshActivityCardKUI(idxPS);
                 displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || [], getPinnedMetaForRedisplay());
                 return;
@@ -3657,7 +3704,9 @@
                 var idxPE = parseInt(t.getAttribute('data-activity-index'), 10);
                 if (!lastSearchResult || isNaN(idxPE)) return;
                 var activityPE = lastSearchResult.activities[idxPE];
-                setProjectRuleConfig(activityPE, { projectEndYmOverride: (t.value || '').trim() });
+                var rawYmE = (t.value || '').trim();
+                var canonE = canonicalYmString(rawYmE);
+                setProjectRuleConfig(activityPE, { projectEndYmOverride: canonE !== null ? canonE : rawYmE });
                 refreshActivityCardKUI(idxPE);
                 displayResults(lastSearchResult.name, lastSearchResult.activities, lastSearchResult.year, lastSearchResult.allActivities || [], getPinnedMetaForRedisplay());
                 return;

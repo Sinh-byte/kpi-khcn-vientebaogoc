@@ -81,6 +81,22 @@
             <div id="toggleUserAllocationStatus" style="margin-top:8px;color:#718096;font-size:0.9em;"></div>
         </div>
 
+        <div class="config-section" style="background:#faf5ff;border-left-color:#805ad5;">
+            <h2>📐 Định mức KPI nghiên cứu bắt buộc (toàn hệ thống)</h2>
+            <p style="color:#2d3748;margin-bottom:10px;font-size:0.95em;line-height:1.5;">
+                Số giờ trừ cho <strong>ngạch nghiên cứu viên</strong> khi tính chênh lệch / thưởng vượt trên trang <strong>user.html</strong>.
+                Mặc định <strong>1760</strong> giờ nếu chưa lưu. Dữ liệu trong sheet <strong>KPI_Settings</strong>, khóa <code>mandatory_research_kpi_hours</code> — mọi người dùng tra cứu đều nhận cùng giá trị sau khi tải cấu hình.
+            </p>
+            <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+                <div>
+                    <label for="mandatoryResearchKpiHoursInput" style="display:block;font-weight:600;margin-bottom:4px;color:#2d3748;">Số giờ</label>
+                    <input type="number" id="mandatoryResearchKpiHoursInput" min="0" step="1" style="width:180px;padding:10px 12px;border:1px solid #cbd5e0;border-radius:8px;" />
+                </div>
+                <button type="button" id="saveMandatoryKpiHoursBtn" class="btn-success" style="margin:0;">💾 Lưu định mức</button>
+            </div>
+            <div id="mandatoryKpiHoursStatus" style="margin-top:10px;color:#718096;font-size:0.9em;"></div>
+        </div>
+
         <div class="config-section" style="background:#ebf8ff;border-left-color:#3182ce;">
             <h2>📣 Thông báo trên trang Tra cứu</h2>
             <p style="color:#2d3748;margin-bottom:12px;font-size:0.95em;">
@@ -184,6 +200,7 @@
             document.getElementById('dashboardView').classList.remove('hidden');
             updateStatus();
             loadUserAllocationToggle();
+            loadMandatoryKpiHoursAdmin();
             loadAnnouncementsAdmin();
             loadStickersAdmin();
         }
@@ -730,6 +747,25 @@
                     st.textContent = 'Đã gửi lưu (nếu không thấy “Đã lưu sticker”, tải lại trang để kiểm tra).';
                 }
             }, 15000);
+        }
+
+        function loadMandatoryKpiHoursAdmin() {
+            var inp = document.getElementById('mandatoryResearchKpiHoursInput');
+            var st = document.getElementById('mandatoryKpiHoursStatus');
+            if (!inp || !st) return;
+            st.textContent = 'Đang tải...';
+            fetchAppSettings()
+                .then(function(data) {
+                    var raw = data && data.settings ? data.settings.mandatory_research_kpi_hours : null;
+                    var n = parseInt(String(raw != null && raw !== '' ? raw : '1760'), 10);
+                    if (isNaN(n) || n < 0) n = 1760;
+                    inp.value = String(n);
+                    st.textContent = 'Đã tải từ server. Sau khi lưu, người tra cứu trên user.html sẽ thấy số mới khi tải lại trang hoặc tra cứu lại.';
+                })
+                .catch(function() {
+                    inp.value = '1760';
+                    st.textContent = 'Không tải được cấu hình — hiển thị 1760.';
+                });
         }
 
         function fetchAppSettings() {
@@ -1307,6 +1343,36 @@
                     .catch(function() {
                         cb.disabled = false;
                         if (st) st.textContent = 'Không lưu được cấu hình.';
+                        alert('Không lưu được cấu hình.');
+                    });
+            });
+        })();
+
+        (function() {
+            var btn = document.getElementById('saveMandatoryKpiHoursBtn');
+            if (!btn) return;
+            btn.addEventListener('click', function() {
+                if (sessionStorage.getItem('adminAuth') !== 'true') return;
+                var inp = document.getElementById('mandatoryResearchKpiHoursInput');
+                var st = document.getElementById('mandatoryKpiHoursStatus');
+                if (!inp || !st) return;
+                var n = parseInt(String(inp.value).trim(), 10);
+                if (isNaN(n) || n < 0) {
+                    alert('Số giờ không hợp lệ (cần số nguyên ≥ 0).');
+                    return;
+                }
+                st.textContent = 'Đang lưu...';
+                setAppSetting('mandatory_research_kpi_hours', String(n))
+                    .then(function(res) {
+                        if (!(res && res.ok)) {
+                            st.textContent = 'Lưu thất bại.';
+                            alert('Không lưu được: ' + (res && res.error ? res.error : 'unknown'));
+                            return;
+                        }
+                        st.textContent = 'Đã lưu: ' + n + ' giờ. Cập nhật cho mọi phiên tra cứu sau khi họ tải lại trang hoặc tra cứu lại.';
+                    })
+                    .catch(function() {
+                        st.textContent = 'Lưu thất bại (mạng / Apps Script).';
                         alert('Không lưu được cấu hình.');
                     });
             });
