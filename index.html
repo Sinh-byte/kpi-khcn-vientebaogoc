@@ -38,6 +38,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
+    <iframe name="kpiStickerSaveFrame" id="kpiStickerSaveFrame" title="Lưu sticker" style="position:absolute;width:0;height:0;border:0;opacity:0;pointer-events:none;" aria-hidden="true"></iframe>
     <div id="loginView" class="container login-container">
         <div class="site-orgline">Viện Tế bào gốc - Trường ĐHKHTN, ĐHQG TP.HCM</div>
         <h1>🔐 Admin Login</h1>
@@ -50,9 +51,10 @@
     <div id="dashboardView" class="container hidden">
         <div style="display:flex;justify-content:space-between;margin-bottom:30px;flex-wrap:wrap;">
             <div><div class="site-orgline" style="text-align:left;margin-bottom:6px;">Viện Tế bào gốc - Trường ĐHKHTN, ĐHQG TP.HCM</div><h1>⚙️ Admin Dashboard</h1><p class="subtitle"><strong>Hệ thống Tra cứu KPI KHCN</strong><br>Quản lý dữ liệu KPI với Google Sheets</p></div>
-            <div>
-                <button id="viewUserBtn" class="btn-secondary">👁️ Trang tra cứu User</button>
-                <button id="logoutBtn" class="btn-danger" style="margin-left: 10px;">🚪 Đăng xuất</button>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;align-items:center;">
+                <button type="button" id="adminKpiBrowseBtn" class="btn-secondary" style="margin:0;">📋 Tra cứu KPI theo người</button>
+                <button id="viewUserBtn" class="btn-secondary" style="margin:0;">👁️ Trang tra cứu User</button>
+                <button id="logoutBtn" class="btn-danger" style="margin:0;">🚪 Đăng xuất</button>
             </div>
         </div>
         
@@ -77,6 +79,46 @@
                 Cho phép user tự chọn Cách 1/Cách 2
             </label>
             <div id="toggleUserAllocationStatus" style="margin-top:8px;color:#718096;font-size:0.9em;"></div>
+        </div>
+
+        <div class="config-section" style="background:#ebf8ff;border-left-color:#3182ce;">
+            <h2>📣 Thông báo trên trang Tra cứu</h2>
+            <p style="color:#2d3748;margin-bottom:12px;font-size:0.95em;">
+                Tạo và sắp xếp các thông báo hiển thị phía trên ô “Chọn năm tra cứu” trên <strong>user.html</strong>.
+                Chỉ các thông báo được tick <strong>Hiển thị</strong> mới xuất hiện cho người dùng.
+            </p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+                <button type="button" id="addAnnouncementBtn" class="btn-secondary" style="margin:0;">＋ Thêm thông báo</button>
+                <button type="button" id="saveAnnouncementsBtn" class="btn-success" style="margin:0;">💾 Lưu thông báo</button>
+            </div>
+            <div id="announcementsAdminStatus" style="margin-bottom:10px;color:#718096;font-size:0.9em;"></div>
+            <div id="announcementsEditorHost"></div>
+            <p style="color:#a0aec0;font-size:0.82em;margin-top:10px;">
+                Dữ liệu lưu trong sheet <strong>KPI_Settings</strong> (khóa <code>announcements</code>). Nếu thông báo quá dài, có thể vượt giới hạn độ dài URL — hãy rút gọn hoặc chia nhỏ.
+            </p>
+        </div>
+
+        <div class="config-section" style="background:#f0fff4;border-left-color:#38a169;">
+            <h2>🖼️ Sticker trang Tra cứu</h2>
+            <p style="color:#2d3748;margin-bottom:12px;font-size:0.95em;">
+                Sticker cố định ở góc màn hình trên <strong>user.html</strong>: <strong>ảnh (URL https)</strong> hoặc <strong>khung nội dung</strong> — dán văn bản thuần (xuống dòng bình thường), không cần HTML.
+                Chỉ mục bật <strong>Hiển thị</strong> và đủ nội dung (ảnh hoặc chữ) mới hiện cho người dùng.
+            </p>
+            <div style="color:#2d3748;font-size:0.92em;margin-bottom:12px;line-height:1.55;padding:12px 14px;background:#f7fafc;border-radius:10px;border-left:4px solid #4299e1;">
+                <strong>Sticker đã lưu trước đây</strong> được tải tự động khi vào trang quản trị (hoặc nhấn <strong>Tải lại từ server</strong>).
+                <strong>Sửa</strong>: chỉnh trực tiếp trong từng thẻ bên dưới rồi nhấn <strong>Lưu sticker</strong>.
+                <strong>Xóa</strong>: nhấn <strong style="color:#c53030;">Xóa</strong> trên thẻ đó, sau đó nhấn <strong>Lưu sticker</strong> — danh sách gửi lên server sẽ không còn sticker đó (chỉ nhấn Xóa mà chưa Lưu thì server chưa đổi).
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+                <button type="button" id="addStickerBtn" class="btn-secondary" style="margin:0;">＋ Thêm sticker</button>
+                <button type="button" id="saveStickersBtn" class="btn-success" style="margin:0;">💾 Lưu sticker</button>
+                <button type="button" id="reloadStickersBtn" class="btn-secondary" style="margin:0;">↻ Tải lại từ server</button>
+            </div>
+            <div id="stickersAdminStatus" style="margin-bottom:10px;color:#718096;font-size:0.9em;"></div>
+            <div id="stickersEditorHost"></div>
+            <p style="color:#a0aec0;font-size:0.82em;margin-top:10px;">
+                Lưu trong <strong>KPI_Settings</strong> (<code>page_stickers</code>). Ảnh: <strong>https://</strong>. Nội dung khung: gõ hoặc dán từ Word — giữ xuống dòng; nội dung dài có thể lưu qua POST (form).
+            </p>
         </div>
         
         <div class="stats" id="stats">
@@ -112,6 +154,8 @@
         var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwb9fcZPwcG8QaX4AwrIfqAO7843xaXc2u7bTtioxK8sMcpz-XAadQHbLDlaBM0wdLc/exec';
         var KPI_CONFIG_TOKEN = '';
         var currentFileData = null;
+        var announcementsDraft = [];
+        var stickersDraft = [];
         
         function checkAuth() { 
             if (sessionStorage.getItem('adminAuth') === 'true') {
@@ -140,6 +184,552 @@
             document.getElementById('dashboardView').classList.remove('hidden');
             updateStatus();
             loadUserAllocationToggle();
+            loadAnnouncementsAdmin();
+            loadStickersAdmin();
+        }
+
+        function collectAnnouncementsFromEditor() {
+            var host = document.getElementById('announcementsEditorHost');
+            if (!host) return [];
+            var cards = host.querySelectorAll('.ann-card');
+            var out = [];
+            cards.forEach(function(card) {
+                var id = (card.getAttribute('data-id') || '').toString().trim();
+                if (!id) id = 'ann_' + Date.now();
+                var createdAt = (card.getAttribute('data-created') || '').toString().trim();
+                if (!createdAt) createdAt = new Date().toISOString();
+                var enabledEl = card.querySelector('.ann-enabled');
+                var titleEl = card.querySelector('.ann-title');
+                var bodyEl = card.querySelector('.ann-body');
+                var enabled = enabledEl ? !!enabledEl.checked : true;
+                var title = titleEl ? (titleEl.value || '').trim() : '';
+                var body = bodyEl ? (bodyEl.value || '').trim() : '';
+                out.push({ id: id, title: title, body: body, enabled: enabled, createdAt: createdAt });
+            });
+            return out;
+        }
+
+        function renderAnnouncementsEditor() {
+            var host = document.getElementById('announcementsEditorHost');
+            if (!host) return;
+            host.innerHTML = '';
+            if (!announcementsDraft.length) {
+                host.innerHTML = '<p style="color:#718096;font-size:0.92em;">Chưa có thông báo. Nhấn “Thêm thông báo”.</p>';
+                return;
+            }
+            announcementsDraft.forEach(function(a) {
+                var card = document.createElement('div');
+                card.className = 'ann-card';
+                card.setAttribute('data-id', a.id || '');
+                card.setAttribute('data-created', a.createdAt || '');
+                card.style.cssText = 'border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:12px;background:#fff;';
+
+                var row1 = document.createElement('div');
+                row1.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;';
+
+                var lab = document.createElement('label');
+                lab.style.cssText = 'display:flex;gap:8px;align-items:center;font-weight:600;color:#2d3748;';
+                var cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.className = 'ann-enabled';
+                cb.checked = !!(a.enabled === true || a.enabled === 'true' || a.enabled === 1 || a.enabled === '1');
+                lab.appendChild(cb);
+                lab.appendChild(document.createTextNode(' Hiển thị trên Tra cứu'));
+
+                var del = document.createElement('button');
+                del.type = 'button';
+                del.textContent = 'Xóa';
+                del.className = 'btn-danger';
+                del.style.padding = '6px 12px';
+                var deleteId = (a.id || '').toString();
+                del.onclick = function() {
+                    announcementsDraft = announcementsDraft.filter(function(x) { return String(x.id) !== deleteId; });
+                    renderAnnouncementsEditor();
+                };
+
+                row1.appendChild(lab);
+                row1.appendChild(del);
+
+                var lt = document.createElement('div');
+                lt.style.fontWeight = '600';
+                lt.style.marginBottom = '4px';
+                lt.textContent = 'Tiêu đề';
+                var ti = document.createElement('input');
+                ti.type = 'text';
+                ti.className = 'ann-title';
+                ti.value = (a.title || '');
+                ti.placeholder = 'Ví dụ: Lịch nộp minh chứng KPI';
+                ti.style.cssText = 'width:100%;padding:10px;margin-bottom:10px;border:2px solid #cbd5e0;border-radius:10px;';
+
+                var lb = document.createElement('div');
+                lb.style.fontWeight = '600';
+                lb.style.marginBottom = '4px';
+                lb.textContent = 'Nội dung';
+                var ta = document.createElement('textarea');
+                ta.className = 'ann-body';
+                ta.rows = 4;
+                ta.value = (a.body || '');
+                ta.placeholder = 'Nội dung chi tiết (xuống dòng được)';
+                ta.style.cssText = 'width:100%;padding:10px;border:2px solid #cbd5e0;border-radius:10px;font-family:inherit;';
+
+                card.appendChild(row1);
+                card.appendChild(lt);
+                card.appendChild(ti);
+                card.appendChild(lb);
+                card.appendChild(ta);
+                host.appendChild(card);
+            });
+        }
+
+        function loadAnnouncementsAdmin() {
+            var st = document.getElementById('announcementsAdminStatus');
+            if (st) st.textContent = 'Đang tải thông báo...';
+            var url = SCRIPT_URL + '?action=getAnnouncements';
+            if (KPI_CONFIG_TOKEN) url += '&token=' + encodeURIComponent(KPI_CONFIG_TOKEN);
+            jsonpRequest(url)
+                .then(function(data) {
+                    announcementsDraft = (data && data.ok && Array.isArray(data.announcements)) ? data.announcements.slice() : [];
+                    renderAnnouncementsEditor();
+                    if (st) st.textContent = 'Đã tải ' + announcementsDraft.length + ' thông báo.';
+                })
+                .catch(function() {
+                    announcementsDraft = [];
+                    renderAnnouncementsEditor();
+                    if (st) st.textContent = 'Không tải được danh sách thông báo.';
+                });
+        }
+
+        function saveAnnouncementsToServer() {
+            var st = document.getElementById('announcementsAdminStatus');
+            var list = collectAnnouncementsFromEditor();
+            announcementsDraft = list;
+            var json = JSON.stringify(list);
+            if (json.length > 7500) {
+                alert('Nội dung quá dài để lưu qua URL một lần. Hãy rút gọn thông báo hoặc chia nhỏ.');
+                return;
+            }
+            if (st) st.textContent = 'Đang lưu...';
+            var url = SCRIPT_URL + '?action=saveAnnouncements&payload=' + encodeURIComponent(json);
+            if (KPI_CONFIG_TOKEN) url += '&token=' + encodeURIComponent(KPI_CONFIG_TOKEN);
+            jsonpRequest(url)
+                .then(function(res) {
+                    if (res && res.ok) {
+                        if (st) st.textContent = 'Đã lưu thông báo.';
+                    } else {
+                        if (st) st.textContent = 'Lưu thất bại.';
+                        alert('Không lưu được: ' + (res && res.error ? res.error : 'unknown'));
+                    }
+                })
+                .catch(function() {
+                    if (st) st.textContent = 'Lưu thất bại.';
+                    alert('Không lưu được thông báo.');
+                });
+        }
+
+        function collectStickersFromEditor() {
+            var host = document.getElementById('stickersEditorHost');
+            if (!host) return [];
+            var cards = host.querySelectorAll('.stk-card');
+            var out = [];
+            cards.forEach(function(card) {
+                var id = (card.getAttribute('data-id') || '').toString().trim();
+                if (!id) id = 'stk_' + Date.now();
+                var createdAt = (card.getAttribute('data-created') || '').toString().trim();
+                if (!createdAt) createdAt = new Date().toISOString();
+                var enabledEl = card.querySelector('.stk-enabled');
+                var titleEl = card.querySelector('.stk-title');
+                var imgEl = card.querySelector('.stk-imageUrl');
+                var linkEl = card.querySelector('.stk-linkUrl');
+                var posEl = card.querySelector('.stk-position');
+                var mwEl = card.querySelector('.stk-maxW');
+                var zEl = card.querySelector('.stk-z');
+                var ordEl = card.querySelector('.stk-order');
+                var typeEl = card.querySelector('.stk-type');
+                var plainEl = card.querySelector('.stk-plain');
+                var maxHEl = card.querySelector('.stk-maxH');
+                var enabled = enabledEl ? !!enabledEl.checked : false;
+                var stickerType = (typeEl && typeEl.value === 'panel') ? 'panel' : 'image';
+                var title = titleEl ? (titleEl.value || '').trim() : '';
+                var imageUrl = imgEl ? (imgEl.value || '').trim() : '';
+                var htmlContent = plainEl ? (plainEl.value || '') : '';
+                var linkUrl = linkEl ? (linkEl.value || '').trim() : '';
+                var position = posEl ? (posEl.value || 'br').trim().toLowerCase() : 'br';
+                var maxWidthPx = mwEl ? parseInt(mwEl.value, 10) : (stickerType === 'panel' ? 360 : 120);
+                if (isNaN(maxWidthPx)) maxWidthPx = stickerType === 'panel' ? 360 : 120;
+                var maxHeightPx = maxHEl ? parseInt(maxHEl.value, 10) : 420;
+                if (isNaN(maxHeightPx)) maxHeightPx = 420;
+                var zIndex = zEl ? parseInt(zEl.value, 10) : 50;
+                if (isNaN(zIndex)) zIndex = 50;
+                var order = ordEl ? parseInt(ordEl.value, 10) : 0;
+                if (isNaN(order)) order = 0;
+                out.push({
+                    id: id,
+                    enabled: enabled,
+                    stickerType: stickerType,
+                    panelBodyFormat: 'plain',
+                    title: title,
+                    imageUrl: imageUrl,
+                    htmlContent: htmlContent,
+                    linkUrl: linkUrl,
+                    position: position,
+                    maxWidthPx: maxWidthPx,
+                    maxHeightPx: maxHeightPx,
+                    zIndex: zIndex,
+                    order: order,
+                    createdAt: createdAt
+                });
+            });
+            return out;
+        }
+
+        function syncStickerSections(card) {
+            var t = card.querySelector('.stk-type');
+            var mode = t && t.value === 'panel' ? 'panel' : 'image';
+            var si = card.querySelector('.stk-sec-image');
+            var sp = card.querySelector('.stk-sec-panel');
+            var mw = card.querySelector('.stk-maxW');
+            if (si) si.style.display = mode === 'image' ? 'block' : 'none';
+            if (sp) sp.style.display = mode === 'panel' ? 'block' : 'none';
+            if (mw) {
+                if (mode === 'panel') {
+                    mw.min = '200';
+                    mw.max = '920';
+                } else {
+                    mw.min = '40';
+                    mw.max = '400';
+                }
+            }
+        }
+
+        function renderStickersEditor() {
+            var host = document.getElementById('stickersEditorHost');
+            if (!host) return;
+            host.innerHTML = '';
+            if (!stickersDraft.length) {
+                host.innerHTML = '<p style="color:#718096;font-size:0.92em;line-height:1.55;">Chưa có sticker trên server. Nhấn <strong>Thêm sticker</strong> để tạo mới.</p>';
+                return;
+            }
+            stickersDraft.forEach(function(s, idx) {
+                var card = document.createElement('div');
+                card.className = 'stk-card';
+                card.setAttribute('data-id', s.id || '');
+                card.setAttribute('data-created', s.createdAt || '');
+                card.style.cssText = 'border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:12px;background:#fff;';
+
+                var row1 = document.createElement('div');
+                row1.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;';
+
+                var lab = document.createElement('label');
+                lab.style.cssText = 'display:flex;gap:8px;align-items:center;font-weight:600;color:#2d3748;';
+                var cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.className = 'stk-enabled';
+                cb.checked = !!(s.enabled === true || s.enabled === 'true' || s.enabled === 1 || s.enabled === '1');
+                lab.appendChild(cb);
+                lab.appendChild(document.createTextNode(' Hiển thị'));
+
+                var del = document.createElement('button');
+                del.type = 'button';
+                del.textContent = 'Xóa';
+                del.className = 'btn-danger';
+                del.style.padding = '6px 12px';
+                var deleteId = (s.id || '').toString();
+                del.onclick = function() {
+                    if (!confirm('Xóa sticker này khỏi danh sách?\n\nNhấn "💾 Lưu sticker" sau đó để xóa hẳn trên server (tra cứu sẽ không còn sticker này).')) return;
+                    stickersDraft = stickersDraft.filter(function(x) { return String(x.id) !== deleteId; });
+                    renderStickersEditor();
+                    var stDel = document.getElementById('stickersAdminStatus');
+                    if (stDel) stDel.textContent = 'Đã xóa khỏi danh sách — nhấn Lưu sticker để áp dụng lên server.';
+                };
+
+                row1.appendChild(lab);
+                row1.appendChild(del);
+                card.appendChild(row1);
+
+                var typeVal = ((s.stickerType || 'image') + '').trim().toLowerCase() === 'panel' ? 'panel' : 'image';
+                var hintBar = document.createElement('div');
+                hintBar.style.cssText = 'font-size:0.86em;color:#4a5568;margin-bottom:12px;padding:8px 10px;background:#edf2f7;border-radius:8px;line-height:1.45;border-left:3px solid #63b3ed;';
+                hintBar.innerHTML = '<strong>#' + (idx + 1) + '</strong> · ' + (typeVal === 'panel' ? 'Khung văn bản' : 'Ảnh') + ' — Sửa nội dung bên dưới hoặc <strong>Xóa</strong>, rồi <strong>Lưu sticker</strong>.';
+                card.appendChild(hintBar);
+                var typeSel = document.createElement('select');
+                typeSel.className = 'stk-type';
+                typeSel.style.cssText = 'width:100%;max-width:360px;padding:10px;border:2px solid #cbd5e0;border-radius:10px;';
+                [['image', 'Ảnh (URL https)'], ['panel', 'Khung nội dung (văn bản)']].forEach(function(opt) {
+                    var o = document.createElement('option');
+                    o.value = opt[0];
+                    o.textContent = opt[1];
+                    if (opt[0] === typeVal) o.selected = true;
+                    typeSel.appendChild(o);
+                });
+                var typeWrap = document.createElement('div');
+                typeWrap.style.marginBottom = '12px';
+                var typeLb = document.createElement('div');
+                typeLb.style.fontWeight = '600';
+                typeLb.style.marginBottom = '4px';
+                typeLb.textContent = 'Loại sticker';
+                typeWrap.appendChild(typeLb);
+                typeWrap.appendChild(typeSel);
+                card.appendChild(typeWrap);
+                typeSel.onchange = function() { syncStickerSections(card); };
+
+                function addLabeledInput(label, inputEl) {
+                    var w = document.createElement('div');
+                    w.style.marginBottom = '10px';
+                    var lb = document.createElement('div');
+                    lb.style.fontWeight = '600';
+                    lb.style.marginBottom = '4px';
+                    lb.textContent = label;
+                    w.appendChild(lb);
+                    w.appendChild(inputEl);
+                    card.appendChild(w);
+                }
+
+                var ti = document.createElement('input');
+                ti.type = 'text';
+                ti.className = 'stk-title';
+                ti.value = (s.title || '');
+                ti.placeholder = 'Ví dụ: Phụ lục 2 — Quy đổi giờ NCKH';
+                ti.style.cssText = 'width:100%;padding:10px;border:2px solid #cbd5e0;border-radius:10px;';
+                addLabeledInput('Tiêu đề (hiển thị trên khung; ảnh: alt)', ti);
+
+                var secImg = document.createElement('div');
+                secImg.className = 'stk-sec-image';
+                var iu = document.createElement('input');
+                iu.type = 'url';
+                iu.className = 'stk-imageUrl';
+                iu.value = (s.imageUrl || '');
+                iu.placeholder = 'https://... (ảnh sticker)';
+                iu.style.cssText = 'width:100%;padding:10px;border:2px solid #cbd5e0;border-radius:10px;';
+                var lu = document.createElement('input');
+                lu.type = 'text';
+                lu.className = 'stk-linkUrl';
+                lu.value = (s.linkUrl || '');
+                lu.placeholder = 'Tuỳ chọn: https://... hoặc /path hoặc #anchor';
+                lu.style.cssText = 'width:100%;padding:10px;border:2px solid #cbd5e0;border-radius:10px;';
+                var l1 = document.createElement('div');
+                l1.style.fontWeight = '600';
+                l1.style.marginBottom = '4px';
+                l1.textContent = 'URL ảnh (https)';
+                secImg.appendChild(l1);
+                secImg.appendChild(iu);
+                var l2 = document.createElement('div');
+                l2.style.fontWeight = '600';
+                l2.style.margin = '10px 0 4px';
+                l2.textContent = 'Liên kết khi bấm ảnh (tuỳ chọn)';
+                secImg.appendChild(l2);
+                secImg.appendChild(lu);
+                card.appendChild(secImg);
+
+                var secPanel = document.createElement('div');
+                secPanel.className = 'stk-sec-panel';
+                var hl = document.createElement('div');
+                hl.style.fontWeight = '600';
+                hl.style.marginBottom = '4px';
+                hl.textContent = 'Nội dung (văn bản — gõ hoặc dán, Enter xuống dòng)';
+                secPanel.appendChild(hl);
+                var ta = document.createElement('textarea');
+                ta.className = 'stk-plain';
+                ta.rows = 14;
+                ta.value = (s.htmlContent || '');
+                ta.placeholder = 'Ví dụ:\nPhụ lục 2 — Quy đổi giờ...\n\n• Mục một: ...\n• Mục hai: ...';
+                ta.style.cssText = 'width:100%;padding:12px;border:2px solid #cbd5e0;border-radius:10px;font-family:inherit;font-size:0.95em;line-height:1.5;';
+                secPanel.appendChild(ta);
+                var mhRow = document.createElement('div');
+                mhRow.style.marginTop = '10px';
+                var mhl = document.createElement('div');
+                mhl.style.fontWeight = '600';
+                mhl.style.marginBottom = '4px';
+                mhl.textContent = 'Chiều cao tối đa vùng nội dung (px — có thanh cuộn)';
+                mhRow.appendChild(mhl);
+                var mh = document.createElement('input');
+                mh.type = 'number';
+                mh.className = 'stk-maxH';
+                mh.min = '120';
+                mh.max = '2000';
+                mh.value = String(s.maxHeightPx != null ? s.maxHeightPx : 420);
+                mh.style.cssText = 'width:100%;max-width:220px;padding:10px;border:2px solid #cbd5e0;border-radius:10px;';
+                mhRow.appendChild(mh);
+                secPanel.appendChild(mhRow);
+                card.appendChild(secPanel);
+
+                var rowGrid = document.createElement('div');
+                rowGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:10px;';
+
+                function mkSel(className, val, opts) {
+                    var sel = document.createElement('select');
+                    sel.className = className;
+                    sel.style.cssText = 'width:100%;padding:10px;border:2px solid #cbd5e0;border-radius:10px;';
+                    opts.forEach(function(o) {
+                        var opt = document.createElement('option');
+                        opt.value = o.v;
+                        opt.textContent = o.t;
+                        if (o.v === val) opt.selected = true;
+                        sel.appendChild(opt);
+                    });
+                    return sel;
+                }
+
+                var posVal = ((s.position || 'br') + '').trim().toLowerCase();
+                var posSel = mkSel('stk-position', posVal, [
+                    { v: 'br', t: 'Góc phải dưới' },
+                    { v: 'bl', t: 'Góc trái dưới' },
+                    { v: 'tr', t: 'Góc phải trên' },
+                    { v: 'tl', t: 'Góc trái trên' }
+                ]);
+                var posWrap = document.createElement('div');
+                var pl = document.createElement('div');
+                pl.style.fontWeight = '600';
+                pl.style.marginBottom = '4px';
+                pl.textContent = 'Vị trí';
+                posWrap.appendChild(pl);
+                posWrap.appendChild(posSel);
+                rowGrid.appendChild(posWrap);
+
+                var mw = document.createElement('input');
+                mw.type = 'number';
+                mw.className = 'stk-maxW';
+                if (typeVal === 'panel') {
+                    mw.min = '200';
+                    mw.max = '920';
+                    mw.value = String(s.maxWidthPx != null ? s.maxWidthPx : 360);
+                } else {
+                    mw.min = '40';
+                    mw.max = '400';
+                    mw.value = String(s.maxWidthPx != null ? s.maxWidthPx : 120);
+                }
+                mw.style.cssText = 'width:100%;padding:10px;border:2px solid #cbd5e0;border-radius:10px;';
+                var mwWrap = document.createElement('div');
+                var ml = document.createElement('div');
+                ml.style.fontWeight = '600';
+                ml.style.marginBottom = '4px';
+                ml.textContent = 'Rộng tối đa (px)';
+                mwWrap.appendChild(ml);
+                mwWrap.appendChild(mw);
+                rowGrid.appendChild(mwWrap);
+
+                var zIn = document.createElement('input');
+                zIn.type = 'number';
+                zIn.className = 'stk-z';
+                zIn.min = '1';
+                zIn.max = '9999';
+                zIn.value = String(s.zIndex != null ? s.zIndex : 50);
+                zIn.style.cssText = 'width:100%;padding:10px;border:2px solid #cbd5e0;border-radius:10px;';
+                var zWrap = document.createElement('div');
+                var zl = document.createElement('div');
+                zl.style.fontWeight = '600';
+                zl.style.marginBottom = '4px';
+                zl.textContent = 'z-index';
+                zWrap.appendChild(zl);
+                zWrap.appendChild(zIn);
+                rowGrid.appendChild(zWrap);
+
+                var ord = document.createElement('input');
+                ord.type = 'number';
+                ord.className = 'stk-order';
+                ord.value = String(s.order != null ? s.order : 0);
+                ord.style.cssText = 'width:100%;padding:10px;border:2px solid #cbd5e0;border-radius:10px;';
+                var ordWrap = document.createElement('div');
+                var ol = document.createElement('div');
+                ol.style.fontWeight = '600';
+                ol.style.marginBottom = '4px';
+                ol.textContent = 'Thứ tự';
+                ordWrap.appendChild(ol);
+                ordWrap.appendChild(ord);
+                rowGrid.appendChild(ordWrap);
+
+                card.appendChild(rowGrid);
+                syncStickerSections(card);
+                host.appendChild(card);
+            });
+        }
+
+        function loadStickersAdmin(afterSave) {
+            var st = document.getElementById('stickersAdminStatus');
+            if (st) st.textContent = 'Đang tải sticker...';
+            var url = SCRIPT_URL + '?action=getStickers';
+            if (KPI_CONFIG_TOKEN) url += '&token=' + encodeURIComponent(KPI_CONFIG_TOKEN);
+            jsonpRequest(url)
+                .then(function(data) {
+                    stickersDraft = (data && data.ok && Array.isArray(data.stickers)) ? data.stickers.slice() : [];
+                    renderStickersEditor();
+                    if (st) {
+                        if (afterSave) {
+                            st.textContent = 'Đã lưu — đã đồng bộ ' + stickersDraft.length + ' sticker từ server.';
+                        } else {
+                            st.textContent = 'Đã tải ' + stickersDraft.length + ' sticker từ server (chỉnh sửa hoặc Xóa rồi Lưu sticker).';
+                        }
+                    }
+                })
+                .catch(function() {
+                    stickersDraft = [];
+                    renderStickersEditor();
+                    if (st) st.textContent = 'Không tải được danh sách sticker.';
+                });
+        }
+
+        function saveStickersToServer() {
+            var st = document.getElementById('stickersAdminStatus');
+            var list = collectStickersFromEditor();
+            stickersDraft = list;
+            var json = JSON.stringify(list);
+
+            function applyStickerSaveResult(res) {
+                if (res && res.ok) {
+                    loadStickersAdmin(true);
+                } else {
+                    if (st) st.textContent = 'Lưu thất bại.';
+                    var map = {
+                        panel_empty: 'Khung nội dung đang trống trong khi bật Hiển thị.',
+                        invalid_sticker_url: 'Thiếu URL ảnh https hoặc không hợp lệ.',
+                        unauthorized: 'Không được phép (token).'
+                    };
+                    var code = res && res.error;
+                    var msg = map[code] || code || 'unknown';
+                    alert('Không lưu được: ' + msg);
+                }
+            }
+
+            if (st) st.textContent = 'Đang lưu...';
+
+            if (json.length <= 7500) {
+                var url = SCRIPT_URL + '?action=saveStickers&payload=' + encodeURIComponent(json);
+                if (KPI_CONFIG_TOKEN) url += '&token=' + encodeURIComponent(KPI_CONFIG_TOKEN);
+                jsonpRequest(url)
+                    .then(function(res) { applyStickerSaveResult(res); })
+                    .catch(function() {
+                        if (st) st.textContent = 'Lưu thất bại.';
+                        alert('Không lưu được sticker.');
+                    });
+                return;
+            }
+
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = SCRIPT_URL;
+            form.target = 'kpiStickerSaveFrame';
+            form.style.display = 'none';
+            function addField(name, val) {
+                var inp = document.createElement('input');
+                inp.type = 'hidden';
+                inp.name = name;
+                inp.value = val;
+                form.appendChild(inp);
+            }
+            addField('action', 'saveStickersForm');
+            try {
+                addField('payloadB64', btoa(unescape(encodeURIComponent(json))));
+            } catch (e64) {
+                addField('payloadB64', btoa(json));
+            }
+            if (KPI_CONFIG_TOKEN) addField('token', KPI_CONFIG_TOKEN);
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+            setTimeout(function() {
+                if (st && st.textContent === 'Đang lưu...') {
+                    st.textContent = 'Đã gửi lưu (nếu không thấy “Đã lưu sticker”, tải lại trang để kiểm tra).';
+                }
+            }, 15000);
         }
 
         function fetchAppSettings() {
@@ -611,6 +1201,29 @@
             currentFileData = null;
         }
         
+        (function initStickerSaveMessageListener() {
+            if (window.__kpiStickerMsgBound) return;
+            window.__kpiStickerMsgBound = true;
+            window.addEventListener('message', function(ev) {
+                var d = ev.data;
+                if (!d || d.kpi !== 'saveStickers') return;
+                var st = document.getElementById('stickersAdminStatus');
+                var res = d.result || {};
+                if (res.ok) {
+                    loadStickersAdmin(true);
+                } else {
+                    if (st) st.textContent = 'Lưu thất bại.';
+                    var map = {
+                        panel_empty: 'Khung nội dung đang trống trong khi bật Hiển thị.',
+                        invalid_sticker_url: 'Thiếu URL ảnh https hoặc không hợp lệ.',
+                        unauthorized: 'Không được phép (token).'
+                    };
+                    var msg = map[res.error] || res.error || 'unknown';
+                    alert('Không lưu được: ' + msg);
+                }
+            });
+        })();
+
         checkAuth();
         
         document.getElementById('loginBtn').addEventListener('click', login);
@@ -619,10 +1232,63 @@
             if (e.key === 'Enter') login();
         });
         document.getElementById('viewUserBtn').addEventListener('click', goToUserPage);
+        document.getElementById('adminKpiBrowseBtn').addEventListener('click', function() {
+            window.location.href = 'admin-kpi.html';
+        });
         document.getElementById('logoutBtn').addEventListener('click', logout);
         document.getElementById('previewBtn').addEventListener('click', previewFile);
         document.getElementById('uploadToSheetsBtn').addEventListener('click', uploadToSheets);
         document.getElementById('cancelBtn').addEventListener('click', cancelPreview);
+
+        document.getElementById('addAnnouncementBtn').addEventListener('click', function() {
+            if (sessionStorage.getItem('adminAuth') !== 'true') return;
+            announcementsDraft.push({
+                id: 'ann_' + Date.now(),
+                title: '',
+                body: '',
+                enabled: true,
+                createdAt: new Date().toISOString()
+            });
+            renderAnnouncementsEditor();
+            var st = document.getElementById('announcementsAdminStatus');
+            if (st) st.textContent = 'Đã thêm thông báo nháp — nhớ nhấn Lưu.';
+        });
+        document.getElementById('saveAnnouncementsBtn').addEventListener('click', function() {
+            if (sessionStorage.getItem('adminAuth') !== 'true') return;
+            saveAnnouncementsToServer();
+        });
+
+        document.getElementById('addStickerBtn').addEventListener('click', function() {
+            if (sessionStorage.getItem('adminAuth') !== 'true') return;
+            stickersDraft.push({
+                id: 'stk_' + Date.now(),
+                enabled: false,
+                stickerType: 'panel',
+                panelBodyFormat: 'plain',
+                title: '',
+                imageUrl: '',
+                htmlContent: '',
+                linkUrl: '',
+                position: 'br',
+                maxWidthPx: 360,
+                maxHeightPx: 420,
+                zIndex: 50,
+                order: stickersDraft.length,
+                createdAt: new Date().toISOString()
+            });
+            renderStickersEditor();
+            var st = document.getElementById('stickersAdminStatus');
+            if (st) st.textContent = 'Đã thêm sticker nháp — nhớ nhấn Lưu.';
+        });
+        document.getElementById('saveStickersBtn').addEventListener('click', function() {
+            if (sessionStorage.getItem('adminAuth') !== 'true') return;
+            saveStickersToServer();
+        });
+        document.getElementById('reloadStickersBtn').addEventListener('click', function() {
+            if (sessionStorage.getItem('adminAuth') !== 'true') return;
+            if (!confirm('Tải lại danh sách sticker từ server?\n\nMọi thay đổi chưa Lưu sticker trên màn hình này sẽ bị bỏ.')) return;
+            loadStickersAdmin(false);
+        });
 
         (function() {
             var cb = document.getElementById('toggleUserAllocation');

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tra cứu KPI theo người — Admin</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); min-height: 100vh; padding: 16px; }
+        .hidden { display: none !important; }
+
+        .login-container { max-width: 420px; margin: 80px auto; background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); padding: 36px; }
+        .site-orgline { text-align: center; font-weight: 700; color: #2d3748; margin-bottom: 14px; letter-spacing: 0.2px; font-size: 0.92em; }
+        h1 { color: #c53030; font-size: 1.75em; margin-bottom: 8px; }
+        .subtitle { color: #718096; margin-bottom: 22px; font-size: 0.98em; line-height: 1.45; }
+        input, select { padding: 12px 14px; font-size: 1em; border: 2px solid #cbd5e0; border-radius: 10px; width: 100%; }
+        button { padding: 11px 20px; font-size: 0.95em; font-weight: 600; color: white; border: none; border-radius: 10px; cursor: pointer; }
+        .btn-main { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .btn-secondary { background: #718096; }
+        .btn-danger { background: #c53030; }
+
+        .shell { max-width: 1420px; margin: 0 auto; }
+        .shell-inner {
+            display: flex;
+            align-items: stretch;
+            min-height: calc(100vh - 32px);
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.28);
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 300px;
+            flex-shrink: 0;
+            border-right: 1px solid #e2e8f0;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 32px);
+        }
+        .sidebar-head { padding: 16px 14px 12px; flex-shrink: 0; }
+        .sidebar-title { font-size: 1.15em; color: #c53030; margin-bottom: 6px; }
+        .sidebar-desc { font-size: 0.82em; color: #718096; line-height: 1.45; }
+        .toolbar-compact { padding: 0 12px 12px; flex-shrink: 0; }
+        .toolbar-compact select { width: 100%; margin-bottom: 8px; max-width: none; }
+        .toolbar-row { display: flex; flex-wrap: wrap; gap: 6px; }
+        .toolbar-row button { flex: 1; min-width: 0; padding: 8px 6px; font-size: 0.82em; margin: 0; }
+        #listStats { padding: 0 14px 8px; font-size: 0.82em; color: #4a5568; flex-shrink: 0; line-height: 1.4; }
+
+        .name-list-head {
+            font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #718096;
+            padding: 8px 14px 4px;
+        }
+        .name-list-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+        .name-list {
+            list-style: none;
+            overflow-y: auto;
+            flex: 1;
+            -webkit-overflow-scrolling: touch;
+        }
+        .name-list li { border-bottom: 1px solid #edf2f7; }
+        .name-list button {
+            width: 100%;
+            text-align: left;
+            padding: 10px 14px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 0.9em;
+            color: #2d3748;
+            line-height: 1.35;
+        }
+        .name-list button:hover { background: #edf2f7; }
+        .name-list button.is-active { background: #e9e9ff; font-weight: 600; color: #4338ca; }
+
+        .sidebar-note {
+            font-size: 0.75em; color: #718096; line-height: 1.45;
+            padding: 10px 12px; margin: 8px 10px 10px;
+            background: #fff; border-radius: 10px; border-left: 3px solid #4299e1;
+        }
+
+        .detail-panel {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            position: relative;
+        }
+        .detail-placeholder {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #718096;
+            padding: 32px;
+            text-align: center;
+            font-size: 1.02em;
+            line-height: 1.5;
+        }
+        .kpi-frame {
+            flex: 1;
+            width: 100%;
+            min-height: min(720px, calc(100vh - 40px));
+            border: none;
+            background: #fff;
+        }
+
+        @media (max-width: 960px) {
+            .shell-inner { flex-direction: column; max-height: none; }
+            .sidebar { width: 100%; max-height: 42vh; border-right: none; border-bottom: 1px solid #e2e8f0; }
+            .kpi-frame { min-height: 55vh; }
+        }
+    </style>
+</head>
+<body>
+    <div id="loginView" class="login-container">
+        <div class="site-orgline">Viện Tế bào gốc - Trường ĐHKHTN, ĐHQG TP.HCM</div>
+        <h1>🔐 Đăng nhập</h1>
+        <p class="subtitle">Tra cứu KPI theo người — cùng mật khẩu với trang quản trị.</p>
+        <input type="password" id="passwordInput" placeholder="Mật khẩu admin" style="margin-bottom:12px;">
+        <button type="button" id="loginBtn" class="btn-main" style="width:100%;">Đăng nhập</button>
+        <button type="button" id="backFromLoginBtn" class="btn-secondary" style="width:100%;margin-top:10px;">← Về Dashboard</button>
+    </div>
+
+    <div id="mainView" class="shell hidden">
+        <div class="shell-inner">
+            <aside class="sidebar" aria-label="Danh sách nghiên cứu viên">
+                <div class="sidebar-head">
+                    <div class="site-orgline" style="margin-bottom:8px;">Viện Tế bào gốc - Trường ĐHKHTN, ĐHQG TP.HCM</div>
+                    <div class="sidebar-title">📋 KPI theo người</div>
+                    <p class="sidebar-desc">Chọn năm, tải danh sách, nhấn tên — chi tiết hiển thị bên phải (cùng trang).</p>
+                </div>
+                <div class="toolbar-compact">
+                    <label for="yearSelect" style="font-size:0.8em;font-weight:600;color:#4a5568;display:block;margin-bottom:4px;">Năm</label>
+                    <select id="yearSelect"></select>
+                    <div class="toolbar-row">
+                        <button type="button" id="loadPeopleBtn" class="btn-main">Tải DS</button>
+                        <button type="button" id="toDashboardBtn" class="btn-secondary">⚙️</button>
+                        <button type="button" id="toUserBtn" class="btn-secondary">👁️</button>
+                        <button type="button" id="logoutBtn" class="btn-danger">Ra</button>
+                    </div>
+                </div>
+                <div id="listStats"></div>
+                <div class="name-list-wrap">
+                    <div class="name-list-head">Họ và tên</div>
+                    <ul id="peopleList" class="name-list"></ul>
+                </div>
+                <p id="emptyHint" class="hidden" style="padding:10px 14px;font-size:0.85em;color:#a0aec0;">Chưa có danh sách.</p>
+                <div class="sidebar-note">
+                    Dữ liệu từ sheet năm. Trong iframe vẫn chỉnh KPI, xuất Word, lưu snapshot. Đăng nhập admin một lần để có quyền trên tra cứu.
+                </div>
+            </aside>
+            <main class="detail-panel">
+                <div id="detailPlaceholder" class="detail-placeholder">
+                    Chọn <strong>một tên</strong> trong danh sách bên trái để xem <strong>Thông tin KPI</strong> tại đây.
+                </div>
+                <iframe id="kpiFrame" class="kpi-frame hidden" title="Chi tiết KPI"></iframe>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        var ADMIN_PASSWORD = 'admin2024';
+        var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwb9fcZPwcG8QaX4AwrIfqAO7843xaXc2u7bTtioxK8sMcpz-XAadQHbLDlaBM0wdLc/exec';
+
+        function normalizeHeaderKey(text) {
+            return (text || '').toString().toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/đ/g, 'd')
+                .replace(/[^a-z0-9]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function normalizeName(name) {
+            if (!name) return '';
+            return name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/[^a-z0-9]/g, '').trim();
+        }
+
+        function parseUniqueAuthorsFromSheetRows(rows) {
+            if (!rows || rows.length < 2) return [];
+            var headers = rows[0] || [];
+            var headerMap = {};
+            for (var h = 0; h < headers.length; h++) {
+                var hk = normalizeHeaderKey(headers[h]);
+                if (hk && headerMap[hk] === undefined) headerMap[hk] = h;
+            }
+            function getIndex(candidates, fallbackIndex) {
+                for (var ci = 0; ci < candidates.length; ci++) {
+                    if (headerMap[candidates[ci]] !== undefined) return headerMap[candidates[ci]];
+                }
+                return fallbackIndex;
+            }
+            var colAuthor = getIndex(['tac gia', 'danh sach tac gia', 'authors'], 6);
+            var byNorm = {};
+            for (var i = 1; i < rows.length; i++) {
+                var row = rows[i];
+                if (!row || row.length < 7) continue;
+                var raw = (row[colAuthor] || '').toString().trim();
+                if (!raw) continue;
+                var key = normalizeName(raw);
+                if (!key) continue;
+                if (!byNorm[key] || raw.length > byNorm[key].length) byNorm[key] = raw;
+            }
+            var out = Object.keys(byNorm).map(function(k) { return byNorm[k]; });
+            out.sort(function(a, b) { return a.localeCompare(b, 'vi'); });
+            return out;
+        }
+
+        function loadYears() {
+            return fetch(SCRIPT_URL).then(function(r) { return r.json(); }).then(function(data) {
+                var years = data.availableYears || [];
+                var sel = document.getElementById('yearSelect');
+                sel.innerHTML = '';
+                if (!years.length) {
+                    sel.innerHTML = '<option value="">Chưa có năm</option>';
+                    return;
+                }
+                years.forEach(function(y) {
+                    var o = document.createElement('option');
+                    o.value = y;
+                    o.textContent = 'Năm ' + y;
+                    sel.appendChild(o);
+                });
+            }).catch(function() {
+                document.getElementById('yearSelect').innerHTML = '<option value="">Lỗi tải năm</option>';
+            });
+        }
+
+        function openPersonInFrame(year, displayName) {
+            var frame = document.getElementById('kpiFrame');
+            var ph = document.getElementById('detailPlaceholder');
+            var url = 'user.html?year=' + encodeURIComponent(year)
+                + '&name=' + encodeURIComponent(displayName)
+                + '&fromAdmin=1&embed=1';
+            frame.src = url;
+            frame.classList.remove('hidden');
+            ph.classList.add('hidden');
+            var buttons = document.querySelectorAll('#peopleList button');
+            for (var i = 0; i < buttons.length; i++) {
+                var b = buttons[i];
+                b.classList.toggle('is-active', b.getAttribute('data-name') === displayName);
+            }
+        }
+
+        function loadPeopleForYear(year) {
+            var st = document.getElementById('listStats');
+            var listEl = document.getElementById('peopleList');
+            var empty = document.getElementById('emptyHint');
+            var frame = document.getElementById('kpiFrame');
+            var ph = document.getElementById('detailPlaceholder');
+            if (!year) {
+                listEl.innerHTML = '';
+                empty.classList.remove('hidden');
+                if (st) st.textContent = '';
+                frame.classList.add('hidden');
+                ph.classList.remove('hidden');
+                frame.src = 'about:blank';
+                return Promise.resolve([]);
+            }
+            if (st) st.textContent = 'Đang tải…';
+            listEl.innerHTML = '';
+            frame.classList.add('hidden');
+            ph.classList.remove('hidden');
+            frame.src = 'about:blank';
+            return fetch(SCRIPT_URL + '?sheet=' + encodeURIComponent(year))
+                .then(function(r) {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
+                .then(function(data) {
+                    var rows = data.values || [];
+                    var names = parseUniqueAuthorsFromSheetRows(rows);
+                    listEl.innerHTML = '';
+                    if (!names.length) {
+                        empty.classList.remove('hidden');
+                        if (st) st.textContent = 'Không có tên trên sheet năm ' + year + '.';
+                        return names;
+                    }
+                    empty.classList.add('hidden');
+                    if (st) st.textContent = year + ': ' + names.length + ' người.';
+                    names.forEach(function(displayName) {
+                        var li = document.createElement('li');
+                        var btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.textContent = displayName;
+                        btn.setAttribute('data-name', displayName);
+                        btn.addEventListener('click', function() {
+                            openPersonInFrame(year, displayName);
+                        });
+                        li.appendChild(btn);
+                        listEl.appendChild(li);
+                    });
+                    return names;
+                })
+                .catch(function(err) {
+                    listEl.innerHTML = '';
+                    empty.classList.remove('hidden');
+                    if (st) st.textContent = 'Lỗi: ' + (err && err.message ? err.message : err);
+                    return [];
+                });
+        }
+
+        function showMain() {
+            document.getElementById('loginView').classList.add('hidden');
+            document.getElementById('mainView').classList.remove('hidden');
+        }
+
+        function showLogin() {
+            document.getElementById('mainView').classList.add('hidden');
+            document.getElementById('loginView').classList.remove('hidden');
+        }
+
+        function checkGate() {
+            if (sessionStorage.getItem('adminAuth') === 'true') {
+                showMain();
+                loadYears();
+            } else {
+                showLogin();
+            }
+        }
+
+        document.getElementById('loginBtn').addEventListener('click', function() {
+            var v = document.getElementById('passwordInput').value;
+            if (v === ADMIN_PASSWORD) {
+                sessionStorage.setItem('adminAuth', 'true');
+                showMain();
+                loadYears();
+            } else {
+                alert('Sai mật khẩu.');
+            }
+        });
+
+        document.getElementById('backFromLoginBtn').addEventListener('click', function() {
+            window.location.href = 'index.html';
+        });
+
+        document.getElementById('loadPeopleBtn').addEventListener('click', function() {
+            loadPeopleForYear(document.getElementById('yearSelect').value);
+        });
+
+        document.getElementById('toDashboardBtn').addEventListener('click', function() {
+            window.location.href = 'index.html';
+        });
+
+        document.getElementById('toUserBtn').addEventListener('click', function() {
+            window.location.href = 'user.html';
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            sessionStorage.removeItem('adminAuth');
+            window.location.href = 'index.html';
+        });
+
+        checkGate();
+    </script>
+</body>
+</html>
