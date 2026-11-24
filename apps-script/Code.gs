@@ -4,6 +4,7 @@
  */
 var KPI_CONFIG_SHEET_NAME = 'KPI_Config';
 var KPI_SETTINGS_SHEET_NAME = 'KPI_Settings';
+var ADMIN_AUTH_SHEET_NAME = 'Admin_Auth';
 var SECRET_TOKEN = '';
 
 function handleKpiConfigDoGet_(e) {
@@ -22,6 +23,9 @@ function handleKpiConfigDoGet_(e) {
     }
     if (action === 'getAppSettings') {
       return jsonOut_(getAppSettingsPayload_(), p.callback);
+    }
+    if (action === 'getAdminAuthStatus') {
+      return jsonOut_(getAdminAuthStatus_(), p.callback);
     }
     if (action === 'getAnnouncements') {
       return jsonOut_(getAnnouncementsPayload_(), p.callback);
@@ -578,6 +582,246 @@ function dedupValues_(values) {
   return { values: out, removed: removed };
 }
 
+// --- Admin Auth (CSDL: sheet Admin_Auth, lưu mật khẩu băm SHA-256 + OTP khôi phục qua email) ---
+
+function getAdminAuthSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(ADMIN_AUTH_SHEET_NAME);
+  if (!sh) {
+    sh = ss.insertSheet(ADMIN_AUTH_SHEET_NAME);
+    sh.appendRow(['key', 'value', 'updatedAt']);
+    sh.getRange(1, 1, 1, 3).setFontWeight('bold');
+  }
+  return sh;
+}
+
+function getAdminAuthMap_() {
+  var sh = getAdminAuthSheet_();
+  var data = sh.getDataRange().getValues();
+  var map = {};
+  for (var i = 1; i < data.length; i++) {
+    var k = (data[i][0] || '').toString().trim();
+    if (!k) continue;
+    map[k] = data[i][1] === undefined || data[i][1] === null ? '' : data[i][1].toString();
+  }
+  return map;
+}
+
+function setAdminAuthValue_(key, value) {
+  var sh = getAdminAuthSheet_();
+  var data = sh.getDataRange().getValues();
+  var now = new Date();
+  var val = value === undefined || value === null ? '' : String(value);
+  for (var i = 1; i < data.length; i++) {
+    if ((data[i][0] || '').toString().trim() === key) {
+      sh.getRange(i + 1, 2).setValue(val);
+      sh.getRange(i + 1, 3).setValue(now);
+      return;
+    }
+  }
+  sh.appendRow([key, val, now]);
+}
+
+function sha256Hex_(text) {
+  var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(text), Utilities.Charset.UTF_8);
+  var hex = '';
+  for (var i = 0; i < digest.length; i++) {
+    var b = digest[i];
+    if (b < 0) b += 256;
+    var h = b.toString(16);
+    if (h.length === 1) h = '0' + h;
+    hex += h;
+  }
+  return hex;
+}
+
+function constantTimeEquals_(a, b) {
+  var sa = String(a || '');
+  var sb = String(b || '');
+  if (sa.length !== sb.length) return false;
+  var diff = 0;
+  for (var i = 0; i < sa.length; i++) {
+    diff |= sa.charCodeAt(i) ^ sb.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+function isValidEmail_(email) {
+  var s = String(email || '').trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+}
+
+function maskEmail_(email) {
+  var s = String(email || '').trim();
+  var parts = s.split('@');
+  if (parts.length !== 2) return '';
+  var local = parts[0];
+  var domain = parts[1];
+  if (local.length <= 2) return local.charAt(0) + '***@' + domain;
+  return local.slice(0, 2) + '***' + local.slice(-1) + '@' + domain;
+}
+
+function getAdminAuthStatus_() {
+  var map = getAdminAuthMap_();
+  var initialized = !!(map.password_hash && map.password_salt);
+  var email = (map.recovery_email || '').trim();
+  return {
+    ok: true,
+    initialized: initialized,
+    hasRecoveryEmail: !!email,
+    maskedEmail: email ? maskEmail_(email) : ''
+  };
+}
+
+function setupAdminPassword_(password, recoveryEmail) {
+  var map = getAdminAuthMap_();
+  if (map.password_hash && map.password_salt) {
+    return { ok: false, error: 'already_initialized' };
+  }
+  var pw = String(password || '');
+  if (pw.length < 6) {
+    return { ok: false, error: 'password_too_short' };
+  }
+  var email = String(recoveryEmail || '').trim().toLowerCase();
+  if (!isValidEmail_(email)) {
+    return { ok: false, error: 'invalid_email' };
+  }
+  var salt = Utilities.getUuid();
+  var hash = sha256Hex_(salt + ':' + pw);
+  setAdminAuthValue_('password_salt', salt);
+  setAdminAuthValue_('password_hash', hash);
+  setAdminAuthValue_('recovery_email', email);
+  return { ok: true, maskedEmail: maskEmail_(email) };
+}
+
+function verifyAdminPassword_(password) {
+  var map = getAdminAuthMap_();
+  if (!map.password_hash || !map.password_salt) {
+    return { ok: false, error: 'not_initialized' };
+  }
+  var pw = String(password || '');
+  if (!pw) {
+    return { ok: false, error: 'invalid_password' };
+  }
+  var candidateHash = sha256Hex_(map.password_salt + ':' + pw);
+  if (!constantTimeEquals_(candidateHash, map.password_hash)) {
+    return { ok: false, error: 'invalid_password' };
+  }
+  return { ok: true };
+}
+
+function changeAdminPassword_(currentPassword, newPassword, recoveryEmail) {
+  var verified = verifyAdminPassword_(currentPassword);
+  if (!verified.ok) return verified;
+
+  var npw = String(newPassword || '');
+  var email = String(recoveryEmail || '').trim().toLowerCase();
+  if (!npw && !email) {
+    return { ok: false, error: 'nothing_to_update' };
+  }
+  if (npw) {
+    if (npw.length < 6) return { ok: false, error: 'password_too_short' };
+    var salt = Utilities.getUuid();
+    var hash = sha256Hex_(salt + ':' + npw);
+    setAdminAuthValue_('password_salt', salt);
+    setAdminAuthValue_('password_hash', hash);
+  }
+  if (email) {
+    if (!isValidEmail_(email)) return { ok: false, error: 'invalid_email' };
+    setAdminAuthValue_('recovery_email', email);
+  }
+  var updated = getAdminAuthMap_();
+  return {
+    ok: true,
+    maskedEmail: updated.recovery_email ? maskEmail_(updated.recovery_email) : ''
+  };
+}
+
+function requestPasswordReset_(emailInput) {
+  var map = getAdminAuthMap_();
+  if (!map.password_hash || !map.password_salt) {
+    return { ok: false, error: 'not_initialized' };
+  }
+  var savedEmail = (map.recovery_email || '').trim().toLowerCase();
+  if (!savedEmail) {
+    return { ok: false, error: 'no_recovery_email' };
+  }
+  var provided = String(emailInput || '').trim().toLowerCase();
+  if (!provided || provided !== savedEmail) {
+    return { ok: false, error: 'email_mismatch' };
+  }
+
+  var otp = String(Math.floor(100000 + Math.random() * 900000));
+  var otpSalt = Utilities.getUuid();
+  var otpHash = sha256Hex_(otpSalt + ':' + otp);
+  var expiresAt = new Date(new Date().getTime() + 10 * 60 * 1000).toISOString();
+
+  setAdminAuthValue_('reset_otp_salt', otpSalt);
+  setAdminAuthValue_('reset_otp_hash', otpHash);
+  setAdminAuthValue_('reset_otp_expires', expiresAt);
+  setAdminAuthValue_('reset_otp_attempts', '0');
+
+  try {
+    MailApp.sendEmail({
+      to: savedEmail,
+      subject: '[KPI KHCN] Mã xác nhận đặt lại mật khẩu Admin',
+      body: 'Xin chào,\n\n'
+        + 'Mã xác nhận (OTP) để đặt lại mật khẩu quản trị Hệ thống Tra cứu KPI KHCN là:\n\n'
+        + '    ' + otp + '\n\n'
+        + 'Mã có hiệu lực trong 10 phút.\n'
+        + 'Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.\n'
+    });
+  } catch (mailErr) {
+    return { ok: false, error: 'mail_send_failed', detail: String(mailErr && mailErr.message ? mailErr.message : mailErr) };
+  }
+
+  return { ok: true, maskedEmail: maskEmail_(savedEmail), expiresInMinutes: 10 };
+}
+
+function resetAdminPassword_(otpInput, newPassword) {
+  var map = getAdminAuthMap_();
+  if (!map.reset_otp_hash || !map.reset_otp_salt || !map.reset_otp_expires) {
+    return { ok: false, error: 'no_active_otp' };
+  }
+  var attempts = parseInt(map.reset_otp_attempts || '0', 10) || 0;
+  if (attempts >= 5) {
+    setAdminAuthValue_('reset_otp_hash', '');
+    setAdminAuthValue_('reset_otp_salt', '');
+    setAdminAuthValue_('reset_otp_expires', '');
+    return { ok: false, error: 'otp_too_many_attempts' };
+  }
+  var expMs = Date.parse(map.reset_otp_expires);
+  if (isNaN(expMs) || new Date().getTime() > expMs) {
+    setAdminAuthValue_('reset_otp_hash', '');
+    setAdminAuthValue_('reset_otp_salt', '');
+    setAdminAuthValue_('reset_otp_expires', '');
+    return { ok: false, error: 'otp_expired' };
+  }
+
+  var otp = String(otpInput || '').trim();
+  var candidateHash = sha256Hex_(map.reset_otp_salt + ':' + otp);
+  if (!constantTimeEquals_(candidateHash, map.reset_otp_hash)) {
+    setAdminAuthValue_('reset_otp_attempts', String(attempts + 1));
+    return { ok: false, error: 'invalid_otp', remainingAttempts: Math.max(0, 4 - attempts) };
+  }
+
+  var npw = String(newPassword || '');
+  if (npw.length < 6) {
+    return { ok: false, error: 'password_too_short' };
+  }
+
+  var salt = Utilities.getUuid();
+  var hash = sha256Hex_(salt + ':' + npw);
+  setAdminAuthValue_('password_salt', salt);
+  setAdminAuthValue_('password_hash', hash);
+  setAdminAuthValue_('reset_otp_hash', '');
+  setAdminAuthValue_('reset_otp_salt', '');
+  setAdminAuthValue_('reset_otp_expires', '');
+  setAdminAuthValue_('reset_otp_attempts', '0');
+
+  return { ok: true };
+}
+
 function doPost(e) {
   e = e || {};
   var stickerMsg = trySaveStickersViaFormPost_(e);
@@ -592,6 +836,22 @@ function doPost(e) {
 
   try {
     var data = JSON.parse(e.postData.contents);
+
+    if (data.action === 'setupAdminPassword') {
+      return jsonOut_(setupAdminPassword_(data.password, data.recoveryEmail));
+    }
+    if (data.action === 'verifyAdminPassword') {
+      return jsonOut_(verifyAdminPassword_(data.password));
+    }
+    if (data.action === 'changeAdminPassword') {
+      return jsonOut_(changeAdminPassword_(data.currentPassword, data.newPassword, data.recoveryEmail));
+    }
+    if (data.action === 'requestPasswordReset') {
+      return jsonOut_(requestPasswordReset_(data.email));
+    }
+    if (data.action === 'resetAdminPassword') {
+      return jsonOut_(resetAdminPassword_(data.otp, data.newPassword));
+    }
 
     if (data.action === 'write' && data.values && data.sheetName) {
       var sheetName = data.sheetName;

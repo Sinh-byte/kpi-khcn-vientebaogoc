@@ -1,0 +1,14 @@
+{
+  "name": "kpi-khcn-vientebaogoc",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Hệ thống quản lý và tra cứu KPI Khoa học Công nghệ — Viện Tế bào gốc, ĐHKHTN, ĐHQG TP.HCM",
+  "scripts": {
+    "test": "node --test tests/kpi-core.test.js",
+    "check": "node tests/syntax-check.js",
+    "verify": "npm run check && npm test"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
